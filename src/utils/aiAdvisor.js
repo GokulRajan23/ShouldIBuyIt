@@ -2,7 +2,7 @@ import { isApiKeyConfigured, API_KEY_SETUP_MESSAGE } from './env.js'
 import { CATEGORIES, PG18_CATEGORIES } from '../data/questionBanks.js'
 
 const API_URL = 'https://openrouter.ai/api/v1/chat/completions'
-const MODEL = 'openai/gpt-oss-120b:free'
+const MODEL = 'openrouter/auto'
 const GEO_DEFAULT = 'Germany'
 const CURRENCY_DEFAULT = '€'
 
