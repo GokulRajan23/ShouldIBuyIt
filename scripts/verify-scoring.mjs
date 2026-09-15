@@ -30,7 +30,7 @@ function run(category, answers, { skipped = [], prankMode = false } = {}) {
 
 console.log('\n— Scoring fixtures —\n')
 
-// 1. Obvious YES: cheap, daily use, old device, no duplicate, can't wait, no hype.
+// 1. Obvious YES: cheap, daily use, old device, well-researched, can't wait, no hype.
 const yes = run('tech', {
   price: price('120', 'full', '€700+'),
   canWait: false,
@@ -38,11 +38,11 @@ const yes = run('tech', {
   usage: 'Daily',
   currentAge: '3+ years old',
   productivity: 5,
-  duplicate: false,
+  researched: 'Thoroughly',
 })
 check('Obvious YES (cheap, daily, needed)', 'YES', yes.verdict, `score ${yes.score} — "${yes.reason}"`)
 
-// 2. Obvious NO: expensive, rarely used, new device, duplicate, can wait, hype.
+// 2. Obvious NO: expensive, rarely used, new device, unresearched, can wait, hype.
 const no = run('tech', {
   price: price('1800', 'emi', 'Under €100'),
   canWait: true,
@@ -50,7 +50,7 @@ const no = run('tech', {
   usage: 'Rarely',
   currentAge: 'New',
   productivity: 1,
-  duplicate: true,
+  researched: 'Not at all',
 })
 check('Obvious NO (pricey, redundant, hype)', 'NO', no.verdict, `score ${no.score} — "${no.reason}"`)
 
@@ -138,12 +138,12 @@ check('Well-justified fashion buy → YES', 'YES', fashionYes.verdict, `score ${
 const a = run('tech', {
   price: price('300', 'full', '€300–700'),
   canWait: false, fomo: false, usage: 'Weekly',
-  currentAge: '1–2 years old', productivity: 3, duplicate: false,
+  currentAge: '1–2 years old', productivity: 3, researched: 'A bit',
 })
 const b = run('tech', {
   price: price('300', 'full', '€300–700'),
   canWait: false, fomo: false, usage: 'Weekly',
-  currentAge: '1–2 years old', productivity: 3, duplicate: false,
+  currentAge: '1–2 years old', productivity: 3, researched: 'A bit',
 })
 check('Deterministic (same in → same out)', JSON.stringify(a), JSON.stringify(b), `score ${a.score}`)
 
@@ -153,7 +153,7 @@ const partial = run('tech', {
   canWait: false,
   fomo: false,
   usage: 'Daily',
-  duplicate: false,
+  researched: 'Thoroughly',
 }, { skipped: ['currentAge', 'productivity'] })
 check('Skips do not bias a clear YES', 'YES', partial.verdict, `score ${partial.score}`)
 
@@ -161,7 +161,7 @@ check('Skips do not bias a clear YES', 'YES', partial.verdict, `score ${partial.
 const noBudget = run('tech', {
   price: price('120', 'full', 'Rather not say'),
   canWait: false, fomo: false, usage: 'Daily',
-  currentAge: '3+ years old', productivity: 5, duplicate: false,
+  currentAge: '3+ years old', productivity: 5, researched: 'Thoroughly',
 })
 check(
   'Budget withheld → affordability dropped',
@@ -178,9 +178,17 @@ const vetoed = run('tech', {
   usage: 'Daily',
   currentAge: "Don't own one",
   productivity: 5,
-  duplicate: false,
+  researched: 'Thoroughly',
 })
 check('Perfect answers but unaffordable → NO', 'NO', vetoed.verdict, `score ${vetoed.score} (veto)`)
+
+// 14. Guard against re-introducing a question that another answer entails.
+//     currentAge already tells us whether an equivalent device is owned.
+const techIds = getQuestionsForCategory('tech').map((q) => q.id)
+check('tech does not ask both currentAge and duplicate', false,
+  techIds.includes('currentAge') && techIds.includes('duplicate'),
+  `tech asks: ${techIds.join(', ')}`)
+check('tech still asks 7 questions', 7, techIds.length)
 
 console.log('\n— Price parsing —\n')
 check('parsePrice("149")', 149, parsePrice('149'))

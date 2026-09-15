@@ -5,7 +5,20 @@ import YesNoButtons from './YesNoButtons.jsx'
 import PriceInput from './PriceInput.jsx'
 import MultipleChoice from './MultipleChoice.jsx'
 
-const TIMER_SECONDS = 12
+// Time per question scales with how much there is to do. The price question
+// collects three fields (amount, payment method, budget band), so a flat
+// timer left no chance of finishing it.
+const TIMER_SECONDS_BY_TYPE = {
+  price: 40,
+  slider: 20,
+  choice: 18,
+  yesno: 14,
+}
+const DEFAULT_TIMER_SECONDS = 18
+
+function timerSecondsFor(question) {
+  return question.timerSeconds ?? TIMER_SECONDS_BY_TYPE[question.type] ?? DEFAULT_TIMER_SECONDS
+}
 
 export default function QuestionCard({ question, index, total, product, prankMode, onAnswer }) {
   const answeredRef = useRef(false)
@@ -95,7 +108,11 @@ export default function QuestionCard({ question, index, total, product, prankMod
         </div>
       )}
 
-      <TimerBar key={question.id} durationSeconds={TIMER_SECONDS} onExpire={handleExpire} />
+      <TimerBar
+        key={question.id}
+        durationSeconds={timerSecondsFor(question)}
+        onExpire={handleExpire}
+      />
 
       <div className="mt-8 flex flex-1 flex-col items-center justify-center">
         <div className="w-full max-w-2xl glass-card p-6 sm:p-10">

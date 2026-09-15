@@ -224,12 +224,14 @@ const UNIVERSAL = {
 const CATEGORY_SCORERS = {
   tech: {
     usage: FREQUENCY_SIGNAL,
+    // Carries the redundancy signal on its own — "do you already own one?"
+    // is entailed by this answer, so scoring it separately double-counted.
     currentAge: sig(
-      10,
+      12,
       'Age of current device',
       fromChoice({ New: -0.8, '1–2 years old': -0.2, '3+ years old': 0.7, "Don't own one": 1 }),
       'what you already have is still fine',
-      'what you have is past it',
+      "what you have is past it",
     ),
     productivity: sig(
       10,
@@ -238,12 +240,12 @@ const CATEGORY_SCORERS = {
       "it won't move the needle on your work",
       "it's a real productivity gain",
     ),
-    duplicate: sig(
-      12,
-      'Owns a duplicate',
-      fromYesNo(0.5, -1),
-      'you already own something that does this job',
-      'nothing you own covers this',
+    researched: sig(
+      10,
+      'Compared against alternatives',
+      fromChoice({ Thoroughly: 0.8, 'A bit': 0.2, Barely: -0.4, 'Not at all': -0.8 }),
+      "you haven't compared it against cheaper options",
+      "you've compared it against the alternatives",
     ),
   },
   fashion: {

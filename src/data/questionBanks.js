@@ -58,10 +58,14 @@ const CATEGORY_QUESTIONS = {
       min: 1,
       max: 5,
     },
+    // NB: a "do you already own one?" question would be fully determined by
+    // currentAge above (owning any equivalent device implies yes), so it can
+    // carry no information. This asks something independent instead.
     {
-      id: 'duplicate',
-      type: 'yesno',
-      label: 'Do you already own something that does the same job?',
+      id: 'researched',
+      type: 'choice',
+      label: 'How much have you compared it against cheaper options?',
+      options: ['Thoroughly', 'A bit', 'Barely', 'Not at all'],
     },
   ],
   fashion: [
