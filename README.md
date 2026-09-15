@@ -2,7 +2,11 @@
 
 > *Should you buy it — or just pass? Let the quiz decide.*
 
-ShouldIBuyIt is a gamified, AI-powered decision-making web app that helps you cut through the noise of impulsive buying. Answer a quick set of timed questions, and get a decisive **YES ✅** or **NO ❌** — no wishy-washy middle ground.
+ShouldIBuyIt is a gamified web app for talking yourself out of impulse purchases. Answer seven timed questions and get a decisive **YES ✅** or **NO ❌** — no wishy-washy middle ground.
+
+It used to ask an AI. Now it does the maths itself, in your browser, with no API key and no network calls.
+
+**Live:** [should-i-buy-it-kappa.vercel.app](https://should-i-buy-it-kappa.vercel.app)
 
 ---
 
@@ -16,30 +20,28 @@ Most of us overthink purchases or, worse, buy impulsively and regret it. ShouldI
 
 ## ✨ Features
 
-- **Timed Question Flow** — Each question comes with a 10-second countdown bar, pushing you to answer from the gut, not the wallet
-- **Gamified UX** — Inspired by mystery quiz aesthetics; bold fonts, sliders, and yes/no buttons that feel satisfying to tap
-- **AI-Powered Verdict** — Answers are processed by GPT to deliver a single, confident decision: Buy it or Pass
-- **Buzzer Sound Effects** — A YES sounds like a game show win; a NO sounds like a buzzer — straight Steve Harvey energy 🎤
-- **One-Line Reason** — The AI explains *why* in a single punchy sentence below the verdict
-- **1–5 Necessity Slider** — A chunky, satisfying slider (à la Water Sort puzzle UI) for scale-based questions
-- **Yes / No Quick Buttons** — Binary questions get clean, large tap targets
+- **Timed question flow** — a countdown bar per question, sized to the work: 14s for a yes/no tap, 40s for the price screen
+- **Category-aware questions** — a laptop and a bottle of wine get different questions; twelve categories, each with its own set
+- **Runs entirely offline** — no API key, no backend, no network request, nothing to pay for
+- **Deterministic verdicts** — the same answers always produce the same result, and you can see the arithmetic behind it
+- **Shows its working** — tap "How we got here" to see every signal, its weight, and the final score out of 100
+- **Age gate with a twist** — ask about something 18+, admit you're not, and the quiz pivots to a kid-safe substitute and judges that instead 🤡
+- **Buzzer sound effects** — a YES sounds like a game show win; a NO sounds like a buzzer, straight Steve Harvey energy 🎤
+- **Chunky tap targets** — thick sliders and big buttons, built for thumbs
 
 ---
 
 ## 🧠 How It Works
 
-1. User enters the product name/description
-2. A series of questions are presented one by one, each with a **10-second timer bar**
-3. Questions include:
-   - On a scale of 1–5, how necessary is this product in your life right now?
-   - What is the price? Are you paying in full or via EMI?
-   - Could you buy this later without it affecting your life?
-   - How much will this improve your productivity?
-   - Have you wanted this for more than 2 weeks?
-   - Are you buying this because of a sale/FOMO?
-   - Do you already own something that does the same job?
-4. Answers are sent to the AI via the OpenRouter API
-5. A **YES ✅** or **NO ❌** verdict is returned with a one-line justification
+1. You type what you're thinking of buying.
+2. A keyword classifier sorts it into one of twelve categories. If nothing wins clearly, you're shown a category picker rather than being guessed at.
+3. Anything age-restricted (alcohol, vape, gambling) hits an age gate first.
+4. You answer **seven questions** against a countdown: four specific to the category, plus three everyone gets — price, whether you could wait a month, and whether a sale or hype is driving it.
+5. The scoring engine weighs every answer and returns **YES ✅** or **NO ❌** with a one-line reason built from whichever two signals mattered most.
+
+A tech quiz, for example, asks how often you'll use it, how old your current one is, how much it helps your work, and how thoroughly you compared cheaper options — then the three universal questions.
+
+Questions that time out are skipped, and a skipped question drops out of the maths entirely rather than counting as a neutral answer.
 
 ---
 
@@ -52,7 +54,7 @@ Inspired by casual mobile puzzle games (bold outlines, chunky UI, playful fonts)
 - **Verdict screens:**
   - ✅ YES → Full-screen large **green box**, celebratory buzzer sound
   - ❌ NO → Full-screen large **red box**, elimination buzzer sound
-- **Timer bar:** Wide, flat horizontal progress bar — large breadth, short height — depletes in 10 seconds
+- **Timer bar:** Wide, flat horizontal progress bar — large breadth, short height. Duration scales with the input: 14s yes/no, 18s multiple choice, 20s slider, 40s for the price screen
 - **Slider:** Thick pill-shaped track with a bold circular thumb (reference: Water Sort puzzle difficulty slider)
 
 ---
@@ -111,19 +113,28 @@ node scripts/verify-scoring.mjs
 ```
 shouldibuyit/
 ├── public/
+│   ├── favicon.svg
 │   └── sounds/
 │       ├── yes-buzzer.wav
-│       └── no-buzzer.wav
+│       ├── no-buzzer.wav
+│       └── prank-reveal.wav
 ├── src/
 │   ├── components/
-│   │   ├── QuestionCard.jsx       # Individual question with timer
-│   │   ├── TimerBar.jsx           # 10-second countdown bar
+│   │   ├── ProductInput.jsx       # Opening screen — what are you buying?
+│   │   ├── CategoryPicker.jsx     # Fallback when the classifier is unsure
+│   │   ├── AgeGate.jsx            # 18+ check for restricted categories
+│   │   ├── PrankReveal.jsx        # The kid-safe pivot 🤡
+│   │   ├── QuestionCard.jsx       # One question + its timer
+│   │   ├── TimerBar.jsx           # Countdown bar
+│   │   ├── PriceInput.jsx         # Price, payment method, budget band
 │   │   ├── SliderInput.jsx        # 1–5 scale slider
 │   │   ├── YesNoButtons.jsx       # Binary answer buttons
-│   │   ├── VerdictScreen.jsx      # Final YES/NO display
-│   │   └── ProductInput.jsx       # Initial product entry screen
+│   │   ├── MultipleChoice.jsx     # Four-option questions
+│   │   ├── LoadingScreen.jsx      # The suspense beat
+│   │   ├── VerdictScreen.jsx      # YES/NO + reason + score breakdown
+│   │   └── Background.jsx         # Per-category gradient mesh
 │   ├── data/
-│   │   └── questions.js           # Question list and types
+│   │   ├── questionBanks.js       # Question sets for all 12 categories
 │   │   ├── categoryKeywords.js    # Keyword dictionary for the classifier
 │   │   └── themes.js              # Per-category gradient palettes
 │   ├── hooks/
@@ -131,11 +142,14 @@ shouldibuyit/
 │   ├── utils/
 │   │   ├── classifier.js          # Offline product → category
 │   │   └── scoring.js             # Deterministic verdict engine
+│   ├── index.css
 │   ├── App.jsx
 │   └── main.jsx
 ├── scripts/
-│   └── verify-scoring.mjs         # Fixture checks for the scoring model
-├── tailwind.config.js
+│   ├── generate-sounds.mjs        # Generates the buzzer .wav files
+│   └── verify-scoring.mjs         # 31 fixture checks for the scoring model
+├── vercel.json                    # SPA routing + security headers
+├── vite.config.js
 ├── package.json
 └── README.md
 ```
@@ -146,8 +160,8 @@ shouldibuyit/
 
 ```bash
 # Clone the repo
-git clone https://github.com/yourusername/shouldibuyit.git
-cd shouldibuyit
+git clone https://github.com/GokulRajan23/ShouldIBuyIt.git
+cd ShouldIBuyIt
 
 # Install dependencies
 npm install
@@ -162,13 +176,17 @@ npm run dev
 ### Deploy to Vercel
 
 1. Push the repo to GitHub and import the project in [Vercel](https://vercel.com).
-2. Deploy. No environment variables needed. SPA routing is handled by [`vercel.json`](vercel.json).
+2. Deploy. No environment variables needed.
+
+[`vercel.json`](vercel.json) handles SPA routing and sets the security headers — a Content Security Policy, `X-Frame-Options`, `Referrer-Policy` and friends. The CSP pins `connect-src` to same-origin, which turns "this app makes no network calls" from a claim in a README into something the browser enforces.
 
 ---
 
 ## 🔮 Roadmap
 
 - [x] Product name input at the start
+- [x] Drop the API — run the verdict locally
+- [x] Show the score breakdown behind each verdict
 - [ ] Share verdict as image card
 - [ ] History of past decisions (localStorage)
 - [ ] Dark mode
@@ -183,4 +201,4 @@ MIT — do whatever you want with it, just don't buy things you don't need.
 
 ---
 
-*Built solo with React + Tailwind. Powered by AI. Inspired by the eternal human struggle of resisting online shopping.*
+*Built solo with React + Tailwind. No AI at runtime, no API bills, no data leaving your browser. Inspired by the eternal human struggle of resisting online shopping.*
