@@ -1,10 +1,13 @@
 import { useState } from 'react'
+import { BUDGET_BAND_OPTIONS } from '../utils/scoring.js'
 
 const CURRENCY = '€'
+const DEFAULT_BAND = BUDGET_BAND_OPTIONS[1]
 
 export default function PriceInput({ onSubmit, disabled }) {
   const [amount, setAmount] = useState('')
   const [payment, setPayment] = useState('full')
+  const [budgetBand, setBudgetBand] = useState(DEFAULT_BAND)
 
   const handleSubmit = () => {
     if (!amount.trim()) return
@@ -12,6 +15,7 @@ export default function PriceInput({ onSubmit, disabled }) {
       amount: amount.trim(),
       currency: CURRENCY,
       payment,
+      budgetBand,
     })
   }
 
@@ -54,6 +58,29 @@ export default function PriceInput({ onSubmit, disabled }) {
               aria-pressed={payment === id}
             >
               {label}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset className="flex flex-col gap-2" disabled={disabled}>
+        <legend className="text-sm font-semibold text-purple/80">
+          Spare cash left over each month
+        </legend>
+        <div className="flex flex-wrap gap-2">
+          {BUDGET_BAND_OPTIONS.map((band) => (
+            <button
+              key={band}
+              type="button"
+              onClick={() => setBudgetBand(band)}
+              className={`min-h-12 flex-1 basis-[calc(50%-0.25rem)] rounded-2xl border-3 border-purple px-3 py-3 text-sm font-bold transition-colors ${
+                budgetBand === band
+                  ? 'bg-purple text-beige shadow-[3px_3px_0_#ff6b6b]'
+                  : 'bg-white text-purple'
+              }`}
+              aria-pressed={budgetBand === band}
+            >
+              {band}
             </button>
           ))}
         </div>

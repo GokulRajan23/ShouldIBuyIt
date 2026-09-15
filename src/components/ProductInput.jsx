@@ -1,17 +1,11 @@
 import { useState } from 'react'
-import { isApiKeyConfigured, API_KEY_SETUP_MESSAGE } from '../utils/env.js'
 
 export default function ProductInput({ onStart }) {
   const [product, setProduct] = useState('')
   const [error, setError] = useState('')
-  const apiKeyReady = isApiKeyConfigured()
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (!apiKeyReady) {
-      setError(API_KEY_SETUP_MESSAGE)
-      return
-    }
     const trimmed = product.trim()
     if (!trimmed) {
       setError('Tell us what you are thinking of buying!')
@@ -31,33 +25,6 @@ export default function ProductInput({ onStart }) {
           Tell us what's tempting you. We'll grill you for 7 questions, then give a verdict.
         </p>
       </header>
-
-      {!apiKeyReady && (
-        <div
-          className="mb-6 w-full max-w-md rounded-2xl border-3 border-purple bg-white p-5 shadow-[4px_4px_0_#4a154b]"
-          role="alert"
-        >
-          <p className="font-bold text-purple">API key required</p>
-          <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm font-medium text-purple/80">
-            <li>
-              Copy <code className="rounded bg-beige px-1">.env.example</code> to{' '}
-              <code className="rounded bg-beige px-1">.env</code>
-            </li>
-            <li>
-              Set <code className="rounded bg-beige px-1">VITE_OPENROUTER_API_KEY</code> from{' '}
-              <a
-                href="https://openrouter.ai/keys"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-bold text-coral underline"
-              >
-                openrouter.ai/keys
-              </a>
-            </li>
-            <li>Restart the dev server (<code className="rounded bg-beige px-1">npm run dev</code>)</li>
-          </ol>
-        </div>
-      )}
 
       <form
         onSubmit={handleSubmit}
@@ -85,13 +52,12 @@ export default function ProductInput({ onStart }) {
         )}
         <button
           type="submit"
-          disabled={!apiKeyReady}
-          className="mt-6 min-h-14 w-full rounded-2xl border-3 border-purple bg-coral px-6 py-4 text-xl font-bold text-white shadow-[4px_4px_0_#4a154b] transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-6 min-h-14 w-full rounded-2xl border-3 border-purple bg-coral px-6 py-4 text-xl font-bold text-white shadow-[4px_4px_0_#4a154b] transition-transform active:scale-95"
         >
           Start the quiz
         </button>
         <p className="mt-4 text-center text-xs font-medium text-purple/60">
-          Prices in € · Defaults to Germany
+          Prices in € · Defaults to Germany · Works offline
         </p>
       </form>
     </div>

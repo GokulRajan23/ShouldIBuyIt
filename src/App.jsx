@@ -1,13 +1,19 @@
-import { useReducer, useEffect, useCallback, useRef } from 'react'
+import { useReducer, useEffect, useRef } from 'react'
 import { useQuizReducer, PHASE } from './hooks/useQuizReducer.js'
-import { classifyProduct, fetchVerdict } from './utils/aiAdvisor.js'
+import { classifyProduct, classificationFromCategory } from './utils/classifier.js'
+import { scoreQuiz } from './utils/scoring.js'
 import ProductInput from './components/ProductInput.jsx'
 import QuestionCard from './components/QuestionCard.jsx'
 import LoadingScreen from './components/LoadingScreen.jsx'
 import VerdictScreen from './components/VerdictScreen.jsx'
 import AgeGate from './components/AgeGate.jsx'
 import PrankReveal from './components/PrankReveal.jsx'
+import CategoryPicker from './components/CategoryPicker.jsx'
 import Background from './components/Background.jsx'
+
+// Scoring is instant, but the suspense is the product — hold the loading screen.
+const CLASSIFY_DELAY_MS = 900
+const VERDICT_DELAY_MS = 1200
 
 function ErrorScreen({ message, onRetry, onReset }) {
   return (
@@ -39,47 +45,36 @@ function ErrorScreen({ message, onRetry, onReset }) {
 export default function App() {
   const { initialState, quizReducer, PHASE: Phases } = useQuizReducer()
   const [state, dispatch] = useReducer(quizReducer, initialState)
-  const verdictRequestRef = useRef(0)
-  const classifyRequestRef = useRef(0)
+  const timerRef = useRef(null)
 
-  // Classification call when the user submits a product.
-  const runClassify = useCallback(async () => {
-    const requestId = ++classifyRequestRef.current
-    try {
-      const classification = await classifyProduct(state.originalProduct)
-      if (requestId !== classifyRequestRef.current) return
-      dispatch({ type: 'SET_CLASSIFICATION', classification })
-    } catch (err) {
-      if (requestId !== classifyRequestRef.current) return
-      dispatch({
-        type: 'SET_ERROR',
-        error: err instanceof Error ? err.message : 'Could not classify product',
-      })
-    }
-  }, [state.originalProduct])
+  // Both "calls" are local and synchronous; the timeout only paces the reveal.
+  useEffect(() => {
+    if (state.phase !== PHASE.CLASSIFYING) return
+    const classification = classifyProduct(state.originalProduct)
+    timerRef.current = setTimeout(
+      () => dispatch({ type: 'SET_CLASSIFICATION', classification }),
+      CLASSIFY_DELAY_MS,
+    )
+    return () => clearTimeout(timerRef.current)
+  }, [state.phase, state.originalProduct])
 
-  // Verdict call once the quiz is done.
-  const runVerdict = useCallback(async () => {
-    const requestId = ++verdictRequestRef.current
-    try {
-      const result = await fetchVerdict({
-        product: state.product,
-        category: state.classification?.category ?? 'other',
-        questions: state.questions,
-        answers: state.answers,
-        skipped: state.skipped,
-        prankMode: state.prankMode,
-      })
-      if (requestId !== verdictRequestRef.current) return
-      dispatch({ type: 'SET_VERDICT', verdict: result })
-    } catch (err) {
-      if (requestId !== verdictRequestRef.current) return
-      dispatch({
-        type: 'SET_ERROR',
-        error: err instanceof Error ? err.message : 'Failed to get verdict',
-      })
-    }
+  useEffect(() => {
+    if (state.phase !== PHASE.LOADING) return
+    const result = scoreQuiz({
+      product: state.product,
+      category: state.classification?.category ?? 'other',
+      questions: state.questions,
+      answers: state.answers,
+      skipped: state.skipped,
+      prankMode: state.prankMode,
+    })
+    timerRef.current = setTimeout(
+      () => dispatch({ type: 'SET_VERDICT', verdict: result }),
+      VERDICT_DELAY_MS,
+    )
+    return () => clearTimeout(timerRef.current)
   }, [
+    state.phase,
     state.product,
     state.classification,
     state.questions,
@@ -88,18 +83,15 @@ export default function App() {
     state.prankMode,
   ])
 
-  useEffect(() => {
-    if (state.phase === PHASE.CLASSIFYING) runClassify()
-  }, [state.phase, runClassify])
-
-  useEffect(() => {
-    if (state.phase === PHASE.LOADING) runVerdict()
-  }, [state.phase, runVerdict])
-
   const handleStart = (product) => dispatch({ type: 'SET_PRODUCT', product })
   const handleAnswer = ({ value, skipped }) =>
     dispatch({ type: 'ANSWER_QUESTION', value, skipped: !!skipped })
   const handleAge = (isAdult) => dispatch({ type: 'CONFIRM_AGE', isAdult })
+  const handlePickCategory = (category) =>
+    dispatch({
+      type: 'PICK_CATEGORY',
+      classification: classificationFromCategory(state.originalProduct, category),
+    })
 
   const themeColors = state.classification?.themeColors
 
@@ -115,6 +107,14 @@ export default function App() {
           <LoadingScreen
             product={state.originalProduct}
             message="Figuring out what kind of buy this is…"
+          />
+        )
+
+      case Phases.CATEGORY_PICK:
+        return (
+          <CategoryPicker
+            product={state.classification?.normalizedProduct ?? state.originalProduct}
+            onPick={handlePickCategory}
           />
         )
 
@@ -158,6 +158,8 @@ export default function App() {
           <VerdictScreen
             verdict={state.verdict.verdict}
             reason={state.verdict.reason}
+            score={state.verdict.score}
+            breakdown={state.verdict.breakdown}
             product={state.product}
             originalProduct={state.originalProduct}
             prankMode={state.prankMode}

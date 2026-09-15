@@ -3,6 +3,7 @@ import { getQuestionsForCategory } from '../data/questionBanks.js'
 export const PHASE = {
   PRODUCT: 'product',
   CLASSIFYING: 'classifying',
+  CATEGORY_PICK: 'category_pick',
   AGE_GATE: 'age_gate',
   PRANK_REVEAL: 'prank_reveal',
   QUIZ: 'quiz',
@@ -25,6 +26,23 @@ const initialState = {
   error: null,
 }
 
+/** Route a finished classification into the age gate or straight into the quiz. */
+function applyClassification(state, classification) {
+  if (classification.isPG18) {
+    return { ...state, classification, phase: PHASE.AGE_GATE }
+  }
+  return {
+    ...state,
+    classification,
+    product: classification.normalizedProduct || state.originalProduct,
+    questions: getQuestionsForCategory(classification.category),
+    questionIndex: 0,
+    answers: {},
+    skipped: [],
+    phase: PHASE.QUIZ,
+  }
+}
+
 function quizReducer(state, action) {
   switch (action.type) {
     case 'SET_PRODUCT':
@@ -38,25 +56,16 @@ function quizReducer(state, action) {
 
     case 'SET_CLASSIFICATION': {
       const { classification } = action
+      // Couldn't place the product → let the user pick the category by hand.
+      if (classification.confidence === 'low') {
+        return { ...state, classification, phase: PHASE.CATEGORY_PICK }
+      }
       // PG18+ → ask age first. Otherwise go straight into the quiz.
-      if (classification.isPG18) {
-        return {
-          ...state,
-          classification,
-          phase: PHASE.AGE_GATE,
-        }
-      }
-      return {
-        ...state,
-        classification,
-        product: classification.normalizedProduct || state.originalProduct,
-        questions: getQuestionsForCategory(classification.category),
-        questionIndex: 0,
-        answers: {},
-        skipped: [],
-        phase: PHASE.QUIZ,
-      }
+      return applyClassification(state, classification)
     }
+
+    case 'PICK_CATEGORY':
+      return applyClassification(state, action.classification)
 
     case 'CONFIRM_AGE': {
       const isAdult = action.isAdult

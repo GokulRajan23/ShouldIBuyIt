@@ -63,37 +63,45 @@ Inspired by casual mobile puzzle games (bold outlines, chunky UI, playful fonts)
 |---|---|
 | Frontend | React |
 | Styling | Tailwind CSS |
-| AI / LLM | OpenRouter API (`openai/gpt-oss-120b:free`) |
+| Verdict engine | Local deterministic scoring (no API, no network) |
 | Sound FX | HTML5 Audio API |
 | State Management | React useState / useReducer |
 | Deployment | Vercel (see below) |
 
 ---
 
-## 🔌 API Integration
+## 🧮 Scoring Engine
 
-This project uses the **OpenRouter API** to process user answers and generate the verdict.
+This project runs **entirely in the browser**. There is no API key, no backend, and no
+network request at runtime — it works offline and costs nothing to host.
 
-**Endpoint:** `https://openrouter.ai/api/v1/chat/completions`
-**Model:** `openai/gpt-oss-120b:free`
+The quiz collects only structured data (a price, two enums, booleans and 1–5 sliders), so the
+verdict is arithmetic rather than a language model.
 
-The prompt sends all answers as structured context and instructs the model to respond with:
-- A strict `YES` or `NO` (no maybes)
-- A single sentence reason (max 20 words)
+**`src/utils/scoring.js`** — weighted additive model:
 
-Example prompt structure:
+- Every question maps to a scorer returning a contribution in `-1..+1`, plus a weight.
+- Final score = weighted mean → mapped to `0–100`. Above 50 is YES; ties resolve to NO.
+- Skipped questions contribute nothing **and** drop out of the denominator, so skipping
+  never biases the result.
+- Derived metrics: **affordability ratio** (price ÷ monthly disposable income) and
+  **cost-per-use** (price ÷ projected lifetime uses).
+- A **hard affordability veto** stops soft preference signals from carrying a purchase
+  that costs over 40% of monthly disposable income.
+- Risk priors push `gambling`, `vape` and `alcohol` toward NO.
+- Fully deterministic — identical answers always produce an identical verdict.
 
-```
-You are a no-nonsense financial advisor. Based on the user's answers below, decide strictly YES (buy it) or NO (don't buy it). No middle ground. Reply in this JSON format: {"verdict": "YES" | "NO", "reason": "<one sentence max 20 words>"}
+All weights and bands live in one place (`WEIGHTS`, `BUDGET_BANDS`, `RISK_PRIORS`) so the
+model can be re-tuned without touching logic.
 
-Answers:
-- Necessity (1-5): 3
-- Price: ₹4,500 (Full payment)
-- Can it wait?: Yes
-- Productivity improvement (1-5): 2
-- Owned something similar?: Yes
-- Buying due to FOMO?: Yes
-- Wanted for 2+ weeks?: No
+**`src/utils/classifier.js`** — maps the typed product to one of 12 categories using a
+keyword dictionary (`src/data/categoryKeywords.js`). When no category wins clearly, the app
+shows a category picker instead of guessing.
+
+Verify the model against its fixtures:
+
+```bash
+node scripts/verify-scoring.mjs
 ```
 
 ---
@@ -116,13 +124,17 @@ shouldibuyit/
 │   │   └── ProductInput.jsx       # Initial product entry screen
 │   ├── data/
 │   │   └── questions.js           # Question list and types
+│   │   ├── categoryKeywords.js    # Keyword dictionary for the classifier
+│   │   └── themes.js              # Per-category gradient palettes
 │   ├── hooks/
-│   │   └── useTimer.js            # Timer logic
+│   │   └── useQuizReducer.js      # Quiz state machine
 │   ├── utils/
-│   │   └── aiVerdict.js           # OpenRouter API call
+│   │   ├── classifier.js          # Offline product → category
+│   │   └── scoring.js             # Deterministic verdict engine
 │   ├── App.jsx
 │   └── main.jsx
-├── .env                           # VITE_OPENROUTER_API_KEY=...
+├── scripts/
+│   └── verify-scoring.mjs         # Fixture checks for the scoring model
 ├── tailwind.config.js
 ├── package.json
 └── README.md
@@ -140,21 +152,17 @@ cd shouldibuyit
 # Install dependencies
 npm install
 
-# Copy env template and add your OpenRouter key
-cp .env.example .env
-# Edit .env — set VITE_OPENROUTER_API_KEY=sk-or-...
-
-# Start the dev server
+# Start the dev server — no configuration, no API key
 npm run dev
 ```
 
-> **API key note:** `VITE_` variables are embedded in the client bundle. This is fine for a personal MVP; do not use a key with billing limits you cannot afford.
+> **No setup required.** The app ships with no environment variables and makes no network
+> requests. It runs as a fully static site and works offline.
 
 ### Deploy to Vercel
 
 1. Push the repo to GitHub and import the project in [Vercel](https://vercel.com).
-2. Add environment variable `VITE_OPENROUTER_API_KEY` in Project Settings → Environment Variables.
-3. Deploy. SPA routing is handled by [`vercel.json`](vercel.json).
+2. Deploy. No environment variables needed. SPA routing is handled by [`vercel.json`](vercel.json).
 
 ---
 
