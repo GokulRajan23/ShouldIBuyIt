@@ -36,10 +36,10 @@ Most of us overthink purchases or, worse, buy impulsively and regret it. ShouldI
 1. You type what you're thinking of buying.
 2. A keyword classifier sorts it into one of twelve categories. If nothing wins clearly, you're shown a category picker rather than being guessed at.
 3. Anything age-restricted (alcohol, vape, gambling) hits an age gate first.
-4. You answer **seven questions** against a countdown: four specific to the category, plus three everyone gets — price, whether you could wait a month, and whether a sale or hype is driving it.
+4. You answer **seven questions** against a countdown: four specific to the category, plus three everyone gets: price, whether you could wait a month, and whether a sale or hype is driving it.
 5. The scoring engine weighs every answer and returns **YES ✅** or **NO ❌** with a one-line reason built from whichever two signals mattered most.
 
-A tech quiz, for example, asks how often you'll use it, how old your current one is, how much it helps your work, and how thoroughly you compared cheaper options — then the three universal questions.
+A tech quiz, for example, asks how often you'll use it, how old your current one is, how much it helps your work, and how thoroughly you compared cheaper options. Then the three universal questions.
 
 Questions that time out are skipped, and a skipped question drops out of the maths entirely rather than counting as a neutral answer.
 
@@ -75,12 +75,12 @@ Inspired by casual mobile puzzle games (bold outlines, chunky UI, playful fonts)
 ## 🧮 Scoring Engine
 
 This project runs **entirely in the browser**. There is no API key, no backend, and no
-network request at runtime — it works offline and costs nothing to host.
+network request at runtime. It works offline and costs nothing to host.
 
 The quiz collects only structured data (a price, two enums, booleans and 1–5 sliders), so the
 verdict is arithmetic rather than a language model.
 
-**`src/utils/scoring.js`** — weighted additive model:
+**`src/utils/scoring.js`** is a weighted additive model:
 
 - Every question maps to a scorer returning a contribution in `-1..+1`, plus a weight.
 - Final score = weighted mean → mapped to `0–100`. Above 50 is YES; ties resolve to NO.
@@ -91,12 +91,12 @@ verdict is arithmetic rather than a language model.
 - A **hard affordability veto** stops soft preference signals from carrying a purchase
   that costs over 40% of monthly disposable income.
 - Risk priors push `gambling`, `vape` and `alcohol` toward NO.
-- Fully deterministic — identical answers always produce an identical verdict.
+- Fully deterministic: identical answers always produce an identical verdict.
 
 All weights and bands live in one place (`WEIGHTS`, `BUDGET_BANDS`, `RISK_PRIORS`) so the
 model can be re-tuned without touching logic.
 
-**`src/utils/classifier.js`** — maps the typed product to one of 12 categories using a
+**`src/utils/classifier.js`** maps the typed product to one of 12 categories using a
 keyword dictionary (`src/data/categoryKeywords.js`). When no category wins clearly, the app
 shows a category picker instead of guessing.
 
@@ -120,7 +120,7 @@ shouldibuyit/
 │       └── prank-reveal.wav
 ├── src/
 │   ├── components/
-│   │   ├── ProductInput.jsx       # Opening screen — what are you buying?
+│   │   ├── ProductInput.jsx       # Opening screen: what are you buying?
 │   │   ├── CategoryPicker.jsx     # Fallback when the classifier is unsure
 │   │   ├── AgeGate.jsx            # 18+ check for restricted categories
 │   │   ├── PrankReveal.jsx        # The kid-safe pivot 🤡
@@ -178,14 +178,14 @@ npm run dev
 1. Push the repo to GitHub and import the project in [Vercel](https://vercel.com).
 2. Deploy. No environment variables needed.
 
-[`vercel.json`](vercel.json) handles SPA routing and sets the security headers — a Content Security Policy, `X-Frame-Options`, `Referrer-Policy` and friends. The CSP pins `connect-src` to same-origin, which turns "this app makes no network calls" from a claim in a README into something the browser enforces.
+[`vercel.json`](vercel.json) handles SPA routing and sets the security headers: a Content Security Policy, `X-Frame-Options`, `Referrer-Policy` and friends. The CSP pins `connect-src` to same-origin, which turns "this app makes no network calls" from a claim in a README into something the browser enforces.
 
 ---
 
 ## 🔮 Roadmap
 
 - [x] Product name input at the start
-- [x] Drop the API — run the verdict locally
+- [x] Drop the API, run the verdict locally
 - [x] Show the score breakdown behind each verdict
 - [ ] Share verdict as image card
 - [ ] History of past decisions (localStorage)
