@@ -20,7 +20,7 @@ Most of us overthink purchases or, worse, buy impulsively and regret it. ShouldI
 
 ## ✨ Features
 
-- **Timed question flow** — a countdown bar per question, sized to the work: 14s for a yes/no tap, 40s for the price screen
+- **Timed question flow** — a countdown bar per question, sized to the work: 14s for a yes/no tap, 45s for the price screen
 - **Category-aware questions** — a laptop and a bottle of wine get different questions; twelve categories, each with its own set
 - **Runs entirely offline** — no API key, no backend, no network request, nothing to pay for
 - **Deterministic verdicts** — the same answers always produce the same result, and you can see the arithmetic behind it
@@ -86,10 +86,14 @@ verdict is arithmetic rather than a language model.
 - Final score = weighted mean → mapped to `0–100`. Above 50 is YES; ties resolve to NO.
 - Skipped questions contribute nothing **and** drop out of the denominator, so skipping
   never biases the result.
-- Derived metrics: **affordability ratio** (price ÷ monthly disposable income) and
-  **cost-per-use** (price ÷ projected lifetime uses).
+- Derived metrics: **affordability ratio** (the unsaved shortfall ÷ monthly disposable
+  income) and **cost-per-use** (price ÷ projected lifetime uses).
+- For anything substantial the quiz asks how much you've already put aside, and
+  affordability is judged on the shortfall rather than the sticker price, so someone
+  who saved deliberately isn't scored like an impulse buyer.
 - A **hard affordability veto** stops soft preference signals from carrying a purchase
-  that costs over 40% of monthly disposable income.
+  whose shortfall exceeds 40% of monthly disposable income. Money already saved for the
+  purchase lifts it.
 - Risk priors push `gambling`, `vape` and `alcohol` toward NO.
 - Fully deterministic: identical answers always produce an identical verdict.
 
@@ -126,7 +130,7 @@ shouldibuyit/
 │   │   ├── PrankReveal.jsx        # The kid-safe pivot 🤡
 │   │   ├── QuestionCard.jsx       # One question + its timer
 │   │   ├── TimerBar.jsx           # Countdown bar
-│   │   ├── PriceInput.jsx         # Price, payment method, budget band
+│   │   ├── PriceInput.jsx         # Price, payment, budget band, savings
 │   │   ├── SliderInput.jsx        # 1–5 scale slider
 │   │   ├── YesNoButtons.jsx       # Binary answer buttons
 │   │   ├── MultipleChoice.jsx     # Four-option questions
@@ -147,7 +151,7 @@ shouldibuyit/
 │   └── main.jsx
 ├── scripts/
 │   ├── generate-sounds.mjs        # Generates the buzzer .wav files
-│   └── verify-scoring.mjs         # 31 fixture checks for the scoring model
+│   └── verify-scoring.mjs         # 43 fixture checks for the scoring model
 ├── vercel.json                    # SPA routing + security headers
 ├── vite.config.js
 ├── package.json

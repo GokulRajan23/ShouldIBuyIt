@@ -1,5 +1,10 @@
 import { useState } from 'react'
-import { BUDGET_BAND_OPTIONS } from '../utils/scoring.js'
+import {
+  BUDGET_BAND_OPTIONS,
+  SAVINGS_OPTIONS,
+  parsePrice,
+  shouldAskAboutSavings,
+} from '../utils/scoring.js'
 
 const CURRENCY = '€'
 const DEFAULT_BAND = BUDGET_BAND_OPTIONS[1]
@@ -8,6 +13,10 @@ export default function PriceInput({ onSubmit, disabled }) {
   const [amount, setAmount] = useState('')
   const [payment, setPayment] = useState('full')
   const [budgetBand, setBudgetBand] = useState(DEFAULT_BAND)
+  const [savedUp, setSavedUp] = useState(null)
+
+  // Only worth asking about savings once the amount is substantial.
+  const askSavings = shouldAskAboutSavings(parsePrice(amount), budgetBand)
 
   const handleSubmit = () => {
     if (!amount.trim()) return
@@ -16,6 +25,7 @@ export default function PriceInput({ onSubmit, disabled }) {
       currency: CURRENCY,
       payment,
       budgetBand,
+      savedUp: askSavings ? savedUp : null,
     })
   }
 
@@ -85,6 +95,31 @@ export default function PriceInput({ onSubmit, disabled }) {
           ))}
         </div>
       </fieldset>
+
+      {askSavings && (
+        <fieldset className="flex flex-col gap-2" disabled={disabled}>
+          <legend className="text-sm font-semibold text-purple/80">
+            How much of this have you already saved?
+          </legend>
+          <div className="flex flex-wrap gap-2">
+            {SAVINGS_OPTIONS.map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => setSavedUp(option)}
+                className={`min-h-12 flex-1 basis-[calc(50%-0.25rem)] rounded-2xl border-3 border-purple px-3 py-3 text-sm font-bold transition-colors ${
+                  savedUp === option
+                    ? 'bg-purple text-beige shadow-[3px_3px_0_#ff6b6b]'
+                    : 'bg-white text-purple'
+                }`}
+                aria-pressed={savedUp === option}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+      )}
 
       <button
         type="button"

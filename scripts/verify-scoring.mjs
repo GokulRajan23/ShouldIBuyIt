@@ -1,6 +1,6 @@
 // Fixture checks for the offline scoring engine. Plain node, no test framework.
 //   node scripts/verify-scoring.mjs
-import { scoreQuiz, parsePrice } from '../src/utils/scoring.js'
+import { scoreQuiz, parsePrice, shouldAskAboutSavings } from '../src/utils/scoring.js'
 import { classifyProduct } from '../src/utils/classifier.js'
 import { getQuestionsForCategory } from '../src/data/questionBanks.js'
 
@@ -15,7 +15,9 @@ function check(name, expectation, actual, detail = '') {
   else if (detail) console.log(`        ${detail}`)
 }
 
-const price = (amount, payment, budgetBand) => ({ amount, currency: '€', payment, budgetBand })
+const price = (amount, payment, budgetBand, savedUp = null) => ({
+  amount, currency: '€', payment, budgetBand, savedUp,
+})
 
 function run(category, answers, { skipped = [], prankMode = false } = {}) {
   return scoreQuiz({
@@ -189,6 +191,52 @@ check('tech does not ask both currentAge and duplicate', false,
   techIds.includes('currentAge') && techIds.includes('duplicate'),
   `tech asks: ${techIds.join(', ')}`)
 check('tech still asks 7 questions', 7, techIds.length)
+
+console.log('\n— Savings —\n')
+
+// The disciplined saver: everything positive, price well over a month's spare
+// cash, but the money is already set aside. Must not be vetoed.
+const techAnswers = (savedUp) => ({
+  price: price('1200', 'full', '€700+', savedUp),
+  canWait: false, fomo: false,
+  usage: 'Daily', currentAge: '3+ years old', productivity: 5, researched: 'Thoroughly',
+})
+
+const saved = run('tech', techAnswers('All of it'))
+check('Fully saved €1200 → YES', 'YES', saved.verdict, `score ${saved.score} — "${saved.reason}"`)
+
+const unsaved = run('tech', techAnswers('None of it'))
+check('Same buy, nothing saved → NO', 'NO', unsaved.verdict, `score ${unsaved.score}`)
+
+const partlySaved = run('tech', techAnswers('Some of it'))
+check('Same buy, some saved → still NO (but scores higher)', 'NO', partlySaved.verdict, `score ${partlySaved.score}`)
+
+check('Saving strictly improves the score', true, saved.score > partlySaved.score && partlySaved.score > unsaved.score,
+  `${unsaved.score} < ${partlySaved.score} < ${saved.score}`)
+
+// Savings must not rescue a purchase that is absurd on every other axis.
+const savedButPointless = run('tech', {
+  price: price('1200', 'full', '€700+', 'All of it'),
+  canWait: true, fomo: true,
+  usage: 'Rarely', currentAge: 'New', productivity: 1, researched: 'Not at all',
+})
+check('Fully saved but pointless → NO', 'NO', savedButPointless.verdict, `score ${savedButPointless.score}`)
+
+// Omitting savings entirely must behave exactly as before the feature.
+const noField = run('tech', {
+  price: price('1200', 'full', '€700+'),
+  canWait: false, fomo: false,
+  usage: 'Daily', currentAge: '3+ years old', productivity: 5, researched: 'Thoroughly',
+})
+check('No savings answer → unchanged legacy behaviour', unsaved.score, noField.score)
+
+console.log('\n— Savings prompt threshold —\n')
+check('€12 lunch is never asked', false, shouldAskAboutSavings(12, 'Under €100'))
+check('€40 on a big budget is not asked', false, shouldAskAboutSavings(40, '€700+'))
+check('€1200 laptop is asked', true, shouldAskAboutSavings(1200, '€700+'))
+check('€80 on a small budget is asked', true, shouldAskAboutSavings(80, '€100–300'))
+check('band withheld: €100 not asked', false, shouldAskAboutSavings(100, 'Rather not say'))
+check('band withheld: €200 asked', true, shouldAskAboutSavings(200, 'Rather not say'))
 
 console.log('\n— Price parsing —\n')
 check('parsePrice("149")', 149, parsePrice('149'))

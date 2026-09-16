@@ -9,7 +9,7 @@ import MultipleChoice from './MultipleChoice.jsx'
 // collects three fields (amount, payment method, budget band), so a flat
 // timer left no chance of finishing it.
 const TIMER_SECONDS_BY_TYPE = {
-  price: 40,
+  price: 45,
   slider: 20,
   choice: 18,
   yesno: 14,

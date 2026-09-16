@@ -28,6 +28,34 @@ export const BUDGET_BANDS = {
 
 export const BUDGET_BAND_OPTIONS = Object.keys(BUDGET_BANDS)
 
+/**
+ * How much of the price is already set aside. Affordability is judged on the
+ * shortfall — the part still to find this month — not the sticker price, so
+ * someone who saved deliberately isn't scored like an impulse buyer.
+ */
+export const SAVINGS_COVERAGE = {
+  'All of it': 1,
+  'Most of it': 0.7,
+  'Some of it': 0.35,
+  'None of it': 0,
+}
+
+export const SAVINGS_OPTIONS = Object.keys(SAVINGS_COVERAGE)
+
+/** Below this share of monthly spare cash, asking about savings is silly. */
+export const SAVINGS_PROMPT_RATIO = 0.2
+/** Nobody saves up for a sandwich, whatever their income. */
+export const SAVINGS_PROMPT_MIN = 80
+/** Used instead of the ratio when the budget band is withheld. */
+export const SAVINGS_PROMPT_ABSOLUTE = 150
+
+/** True when a purchase is big enough that "have you saved for it?" is worth asking. */
+export function shouldAskAboutSavings(price, budgetBand) {
+  if (!Number.isFinite(price) || price < SAVINGS_PROMPT_MIN) return false
+  const budget = BUDGET_BANDS[budgetBand] ?? null
+  return budget === null ? price >= SAVINGS_PROMPT_ABSOLUTE : price / budget >= SAVINGS_PROMPT_RATIO
+}
+
 /** Choice label → how many times per month it gets used. */
 const USES_PER_MONTH = {
   Daily: 30,
@@ -76,7 +104,19 @@ const RISK_PRIORS = {
  * Affordability is a fact; "I have space for it" is a preference.
  */
 const AFFORDABILITY_VETO_RATIO = 0.4
-const VETO_CEILING = -0.05
+/**
+ * A vetoed purchase is always a NO, but the score still shows how far off it
+ * is — so paying down the shortfall (by saving) visibly moves the number even
+ * while the answer stays no. Bounds keep it strictly below the YES threshold.
+ */
+const VETO_CEILING_NEAR = -0.02
+const VETO_CEILING_FAR = -0.35
+const VETO_FALLOFF = 0.3
+
+function vetoCeiling(shortfallRatio) {
+  const over = shortfallRatio - AFFORDABILITY_VETO_RATIO
+  return clamp(VETO_CEILING_NEAR - VETO_FALLOFF * over, VETO_CEILING_FAR, VETO_CEILING_NEAR)
+}
 
 const DURABLE_CATEGORIES = ['tech', 'fashion', 'home', 'fitness', 'beauty', 'auto', 'hobby', 'other']
 
@@ -598,18 +638,32 @@ export function scoreQuiz({ category = 'other', questions = [], answers = {}, sk
 
   // --- Universal price-derived signals -------------------------------------
   if (!isSkipped('price') && price !== null && budget !== null) {
-    const ratio = price / budget
+    // Only the unsaved portion has to come out of this month's money.
+    const answeredSavings = priceAnswer?.savedUp in SAVINGS_COVERAGE
+    const coverage = answeredSavings ? SAVINGS_COVERAGE[priceAnswer.savedUp] : 0
+    const shortfall = price * (1 - coverage)
+    const ratio = shortfall / budget
     derived.affordabilityRatio = ratio
+    derived.savingsCoverage = coverage
     const pct = Math.round(ratio * 100)
     const points = affordabilityScore(ratio)
-    add(
-      'Affordability',
-      points,
-      WEIGHTS.affordability,
-      points >= 0
-        ? `${money(price)} barely dents your monthly spare cash`
-        : `${money(price)} is ${pct}% of your monthly spare cash`,
-    )
+
+    let phrase
+    if (coverage >= 1) {
+      phrase = `you've already saved the full ${money(price)}`
+    } else if (coverage > 0 && points < 0) {
+      phrase = `even after your savings, ${money(shortfall)} still has to come from somewhere`
+    } else if (coverage > 0) {
+      phrase = `your savings cover most of the ${money(price)}`
+    } else if (points >= 0) {
+      phrase = `${money(price)} barely dents your monthly spare cash`
+    } else if (answeredSavings) {
+      phrase = `${money(price)} is ${pct}% of your monthly spare cash and none of it is saved`
+    } else {
+      phrase = `${money(price)} is ${pct}% of your monthly spare cash`
+    }
+
+    add('Affordability', points, WEIGHTS.affordability, phrase)
   }
 
   if (!isSkipped('price') && priceAnswer?.payment) {
@@ -641,9 +695,10 @@ export function scoreQuiz({ category = 'other', questions = [], answers = {}, sk
 
   if (!prankMode && RISK_PRIORS[category]) normalized += RISK_PRIORS[category]
 
-  // Hard affordability veto — soft signals cannot outvote the maths.
+  // Hard affordability veto — soft signals cannot outvote the maths. Measured
+  // on the shortfall, so money already saved for this purchase lifts it.
   if (derived.affordabilityRatio >= AFFORDABILITY_VETO_RATIO) {
-    normalized = Math.min(normalized, VETO_CEILING)
+    normalized = Math.min(normalized, vetoCeiling(derived.affordabilityRatio))
   }
 
   normalized = clamp(normalized)
