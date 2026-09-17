@@ -61,7 +61,7 @@ const allSkipped = run('other', {}, {
   skipped: ['necessity', 'usageFrequency', 'duplicate', 'lifestyleFit', 'price', 'canWait', 'fomo'],
 })
 check('All questions skipped → NO', 'NO', allSkipped.verdict, `score ${allSkipped.score}`)
-check('All skipped → neutral score 50', 50, allSkipped.score)
+check('All skipped → just under neutral (no price ⇒ no yes)', 49, allSkipped.score)
 check('All skipped → empty breakdown', 0, allSkipped.breakdown.length)
 
 // 4. Gambling with sane answers still leans NO because of the risk prior.
@@ -159,16 +159,16 @@ const partial = run('tech', {
 }, { skipped: ['currentAge', 'productivity'] })
 check('Skips do not bias a clear YES', 'YES', partial.verdict, `score ${partial.score}`)
 
-// 12. "Rather not say" budget drops the affordability signal instead of guessing.
+// 12. "Rather not say" is judged against the most generous band, not dropped.
 const noBudget = run('tech', {
   price: price('120', 'full', 'Rather not say'),
   canWait: false, fomo: false, usage: 'Daily',
   currentAge: '3+ years old', productivity: 5, researched: 'Thoroughly',
 })
 check(
-  'Budget withheld → affordability dropped',
-  false,
-  noBudget.breakdown.some((b) => b.label === 'Affordability'),
+  'Budget withheld → still scored, not dropped',
+  true,
+  noBudget.breakdown.some((b) => b.label.startsWith('Affordability')),
   `score ${noBudget.score}`,
 )
 
@@ -229,6 +229,40 @@ const noField = run('tech', {
   usage: 'Daily', currentAge: '3+ years old', productivity: 5, researched: 'Thoroughly',
 })
 check('No savings answer → unchanged legacy behaviour', unsaved.score, noField.score)
+
+console.log('\n— Affordability cannot be bypassed —\n')
+
+const bigBuy = (extra) => ({
+  canWait: false, fomo: false,
+  usage: 'Daily', currentAge: '3+ years old', productivity: 5, researched: 'Thoroughly',
+  ...extra,
+})
+
+const honestBig = run('tech', bigBuy({ price: price('1200', 'full', '€700+', 'None of it') }))
+const withheldBig = run('tech', bigBuy({ price: price('1200', 'full', 'Rather not say') }))
+const skippedBig = run('tech', bigBuy({}), { skipped: ['price'] })
+
+check('Unaffordable buy, answered honestly → NO', 'NO', honestBig.verdict, `score ${honestBig.score}`)
+check('Same buy, budget withheld → still NO', 'NO', withheldBig.verdict, `score ${withheldBig.score}`)
+check('Withholding never beats answering', true, withheldBig.score <= honestBig.score,
+  `withheld ${withheldBig.score} <= honest ${honestBig.score}`)
+
+check('Skipped price → NO', 'NO', skippedBig.verdict, `score ${skippedBig.score}`)
+check('Skipped price → says why', true, /without a price/i.test(skippedBig.reason), skippedBig.reason)
+check('Skipping never beats answering', true, skippedBig.score <= 50,
+  `skipped ${skippedBig.score}`)
+
+// A modest purchase with the budget withheld is still allowed to be a YES.
+const smallWithheld = run('tech', bigBuy({ price: price('40', 'full', 'Rather not say') }))
+check('Small buy, budget withheld → YES still possible', 'YES', smallWithheld.verdict,
+  `score ${smallWithheld.score}`)
+
+// Savings still work through the withheld path, but with capped upside.
+const savedWithheld = run('tech', bigBuy({ price: price('1200', 'full', 'Rather not say', 'All of it') }))
+const savedHonest = run('tech', bigBuy({ price: price('1200', 'full', '€700+', 'All of it') }))
+check('Savings still count when budget withheld', 'YES', savedWithheld.verdict, `score ${savedWithheld.score}`)
+check('Best-case assumption cannot outscore the truth', true, savedWithheld.score <= savedHonest.score,
+  `withheld ${savedWithheld.score} <= honest ${savedHonest.score}`)
 
 console.log('\n— Savings prompt threshold —\n')
 check('€12 lunch is never asked', false, shouldAskAboutSavings(12, 'Under €100'))

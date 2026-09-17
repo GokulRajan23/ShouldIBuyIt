@@ -118,6 +118,22 @@ function vetoCeiling(shortfallRatio) {
   return clamp(VETO_CEILING_NEAR - VETO_FALLOFF * over, VETO_CEILING_FAR, VETO_CEILING_NEAR)
 }
 
+/**
+ * When the income band is withheld, judge the purchase against the most
+ * generous band on offer. If it is unaffordable even then it is unaffordable
+ * on any income, so withholding can never beat answering honestly. The upside
+ * is capped because a best-case assumption is weak evidence in the other
+ * direction — it cannot earn a strong positive.
+ */
+const ASSUMED_BUDGET = Math.max(...Object.values(BUDGET_BANDS).filter(Number.isFinite))
+const ASSUMED_BUDGET_MAX_POINTS = 0.2
+
+/**
+ * With no price at all there is nothing to judge affordability against, so the
+ * engine must not green-light the purchase however good the other answers are.
+ */
+const UNKNOWN_AFFORDABILITY_CEILING = -0.02
+
 const DURABLE_CATEGORIES = ['tech', 'fashion', 'home', 'fitness', 'beauty', 'auto', 'hobby', 'other']
 
 // ---------------------------------------------------------------------------
@@ -637,11 +653,15 @@ export function scoreQuiz({ category = 'other', questions = [], answers = {}, sk
   const isSkipped = (id) => skipped.includes(id) || answers[id] === undefined
 
   // --- Universal price-derived signals -------------------------------------
-  if (!isSkipped('price') && price !== null && budget !== null) {
-    // Only the unsaved portion has to come out of this month's money.
-    const answeredSavings = priceAnswer?.savedUp in SAVINGS_COVERAGE
-    const coverage = answeredSavings ? SAVINGS_COVERAGE[priceAnswer.savedUp] : 0
-    const shortfall = price * (1 - coverage)
+  const answeredSavings = priceAnswer?.savedUp in SAVINGS_COVERAGE
+  const coverage = answeredSavings ? SAVINGS_COVERAGE[priceAnswer.savedUp] : 0
+  // Only the unsaved portion has to come out of this month's money.
+  const shortfall = price === null ? null : price * (1 - coverage)
+
+  if (isSkipped('price') || price === null) {
+    // No price means no affordability judgement is possible at all.
+    derived.affordabilityUnknown = true
+  } else if (budget !== null) {
     const ratio = shortfall / budget
     derived.affordabilityRatio = ratio
     derived.savingsCoverage = coverage
@@ -664,6 +684,22 @@ export function scoreQuiz({ category = 'other', questions = [], answers = {}, sk
     }
 
     add('Affordability', points, WEIGHTS.affordability, phrase)
+  } else {
+    // Income withheld — assume the best case and see if it still fails.
+    const ratio = shortfall / ASSUMED_BUDGET
+    derived.affordabilityRatio = ratio
+    derived.savingsCoverage = coverage
+    const points = Math.min(affordabilityScore(ratio), ASSUMED_BUDGET_MAX_POINTS)
+    add(
+      'Affordability (budget not given)',
+      points,
+      WEIGHTS.affordability,
+      coverage >= 1
+        ? `you've already saved the full ${money(price)}`
+        : points >= 0
+          ? `${money(price)} is modest on any budget`
+          : `${money(shortfall)} would be a stretch on even a generous budget`,
+    )
   }
 
   if (!isSkipped('price') && priceAnswer?.payment) {
@@ -701,14 +737,26 @@ export function scoreQuiz({ category = 'other', questions = [], answers = {}, sk
     normalized = Math.min(normalized, vetoCeiling(derived.affordabilityRatio))
   }
 
+  // No price, no yes. Skipping the price question used to delete the single
+  // heaviest constraint and hand out an inflated YES.
+  if (derived.affordabilityUnknown) {
+    normalized = Math.min(normalized, UNKNOWN_AFFORDABILITY_CEILING)
+  }
+
   normalized = clamp(normalized)
 
   const score = Math.round(((normalized + 1) / 2) * 100)
   const verdict = score > 50 ? 'YES' : 'NO'
 
+  // Every remaining signal can be positive while the verdict is NO, so say
+  // plainly what is missing instead of pairing a NO with cheerful reasons.
+  const reason = derived.affordabilityUnknown
+    ? "Without a price we can't tell whether you can afford it, so that's a no for now."
+    : buildReason(contributions, verdict)
+
   return {
     verdict,
-    reason: buildReason(contributions, verdict),
+    reason,
     score,
     breakdown: contributions.map(({ label, points, weight }) => ({
       label,
