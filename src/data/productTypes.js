@@ -24,7 +24,7 @@ export const PRODUCT_TYPES = {
       keywords: ['phone', 'smartphone', 'iphone', 'android', 'pixel', 'samsung galaxy'],
       item: 'this phone',
       questions: {
-        usage: 'How often will you use what this phone does better than your current one?',
+        usage: "How often will you use what's new on this phone?",
         currentAge: 'How old is the phone you have now?',
         productivity: {
           label: 'How much is your current phone actually holding you back?',
