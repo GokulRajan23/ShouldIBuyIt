@@ -88,13 +88,7 @@ export default function QuestionCard({
           />
         )
       case 'price':
-        return (
-          <PriceInput
-            disabled={disabled}
-            allowInstalments={question.instalments !== false}
-            onSubmit={(v) => submitAnswer(v)}
-          />
-        )
+        return <PriceInput disabled={disabled} onSubmit={(v) => submitAnswer(v)} />
       default:
         return null
     }
@@ -124,7 +118,7 @@ export default function QuestionCard({
 
       {essential && index === 0 && (
         <p className="mb-4 rounded-2xl border-3 border-purple bg-white/80 px-4 py-2 text-center text-sm font-bold text-purple">
-          🥛 Everyday essential: we skipped the impulse questions.
+          🥛 Everyday essential: just three quick questions.
         </p>
       )}
 

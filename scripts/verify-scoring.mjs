@@ -330,10 +330,9 @@ check('"rice cooker" → home, not food', 'home', classifyProduct('rice cooker')
 check('"bread maker" → home, not food', 'home', classifyProduct('bread maker').category)
 
 const essentialIds = getQuestionsForCategory('food', { essential: true }).map((q) => q.id)
-check('Essentials ask exactly 3 questions', 'healthy,alternatives,price', essentialIds.join(','))
+check('Essentials ask exactly the 3 need questions', 'haveAtHome,regularShop,runOut', essentialIds.join(','))
+check('Essentials never show the price screen', false, essentialIds.includes('price'))
 check('Non-essential food still asks 7', 7, getQuestionsForCategory('food').length)
-check('Essentials price screen hides instalments', false,
-  getQuestionsForCategory('food', { essential: true }).find((q) => q.id === 'price').instalments)
 
 const { initialState, quizReducer } = useQuizReducer()
 const milkQuiz = quizReducer(
@@ -347,21 +346,28 @@ const pizzaQuiz = quizReducer(
 )
 check('Typing "pizza" still starts the full quiz', 7, pizzaQuiz.questions.length)
 
-const milk = run('food', {
-  price: price('1.29', null, 'Under €100'),
-  healthy: 4,
-  alternatives: false,
-}, { essential: true })
-check('Ordinary milk run → YES', 'YES', milk.verdict, `score ${milk.score} — "${milk.reason}"`)
-check('No payment signal when instalments were never offered', false,
-  milk.breakdown.some((b) => b.label === 'Payment method'))
+const essentialRun = (answers, opts = {}) => run('food', answers, { essential: true, ...opts })
 
-const pricyMilk = run('food', {
-  price: price('40', null, 'Under €100'),
-  healthy: 4,
-  alternatives: false,
-}, { essential: true })
-check('Essentials still hit the affordability veto', 'NO', pricyMilk.verdict, `score ${pricyMilk.score}`)
+const outOfMilk = essentialRun({ haveAtHome: false, regularShop: true, runOut: 'Today' })
+check('Out of milk, regular shop → YES without a price', 'YES', outOfMilk.verdict,
+  `score ${outOfMilk.score} — "${outOfMilk.reason}"`)
+check('No affordability signal for essentials', false,
+  outOfMilk.breakdown.some((b) => b.label.startsWith('Affordability')))
+
+const stocked = essentialRun({ haveAtHome: true, regularShop: false, runOut: 'Not any time soon' })
+check('Already stocked, not a regular buy → NO', 'NO', stocked.verdict,
+  `score ${stocked.score} — "${stocked.reason}"`)
+
+const topUp = essentialRun({ haveAtHome: true, regularShop: true, runOut: 'This week' })
+check('Have some, but regular and running low → YES', 'YES', topUp.verdict, `score ${topUp.score}`)
+
+const timedOut = essentialRun({}, { skipped: ['haveAtHome', 'regularShop', 'runOut'] })
+check('All three essentials timed out → NO', 'NO', timedOut.verdict, `score ${timedOut.score}`)
+
+check('Sooner run-out strictly helps', true,
+  ['Not any time soon', 'Later', 'This week', 'Today']
+    .map((runOut) => essentialRun({ haveAtHome: false, regularShop: false, runOut }).score)
+    .every((score, i, all) => i === 0 || score > all[i - 1]))
 
 console.log('\n— Product-specific questions —\n')
 
@@ -417,7 +423,8 @@ for (const category of CATEGORIES) {
     for (const essential of category === 'food' ? [false, true] : [false]) {
       const questions = getQuestionsForCategory(category, { productType: type?.id, essential })
       for (const q of questions) {
-        const base = baseQuestions.find((b) => b.id === q.id)
+        // Essentials-only questions have no category counterpart to drift from.
+        const base = baseQuestions.find((b) => b.id === q.id) ?? q
         if (q.type !== base.type || JSON.stringify(q.options) !== JSON.stringify(base.options)) {
           idDrift.push(`${category}/${type?.id}.${q.id}`)
         }

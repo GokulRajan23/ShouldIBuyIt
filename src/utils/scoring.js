@@ -374,6 +374,28 @@ const CATEGORY_SCORERS = {
       "you've only wanted it since today",
       "you've wanted it for a while",
     ),
+    // Everyday essentials ask about need instead (see ESSENTIAL_QUESTIONS).
+    haveAtHome: sig(
+      14,
+      'Already have some',
+      fromYesNo(0.8, -0.9),
+      'you already have some at home',
+      "you don't have any at home",
+    ),
+    regularShop: sig(
+      10,
+      'Regular weekly shop',
+      fromYesNo(-0.4, 0.8),
+      "it isn't part of your usual shop",
+      "it's part of your regular shop",
+    ),
+    runOut: sig(
+      12,
+      'Running out',
+      fromChoice({ Today: 1, 'This week': 0.6, Later: -0.3, 'Not any time soon': -0.8 }),
+      "you won't run out any time soon",
+      "you're about to run out",
+    ),
   },
   fitness: {
     consistency: sig(
@@ -660,7 +682,10 @@ export function scoreQuiz({ category = 'other', questions = [], answers = {}, sk
   // Only the unsaved portion has to come out of this month's money.
   const shortfall = price === null ? null : price - savedSoFar
 
-  if (isSkipped('price') || price === null) {
+  if (!questions.some((q) => q.id === 'price')) {
+    // Never asked (everyday essentials): judged on need alone, so there is no
+    // skipped price to guard against.
+  } else if (isSkipped('price') || price === null) {
     // No price means no affordability judgement is possible at all.
     derived.affordabilityUnknown = true
   } else if (budget !== null) {

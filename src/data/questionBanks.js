@@ -353,12 +353,29 @@ const CATEGORY_QUESTIONS = {
 }
 
 /**
- * Everyday essentials (milk, bread, eggs) skip the impulse questions: nobody
- * waits a month for milk, buys it from FOMO or has craved it for ages. The food
- * budget question goes too, because the price screen already asks for spare
- * cash. Price stays — without it the engine will not say yes.
+ * Everyday essentials (milk, bread, eggs) get their own three questions about
+ * need instead of the category quiz: nobody waits a month for milk or buys it
+ * from FOMO. No price screen — affordability isn't the question for a staple,
+ * so the verdict comes from these answers alone.
  */
-export const ESSENTIAL_SKIPPED_IDS = ['budget', 'cravingDuration', 'canWait', 'fomo']
+const ESSENTIAL_QUESTIONS = [
+  {
+    id: 'haveAtHome',
+    type: 'yesno',
+    label: 'Do you already have some at home?',
+  },
+  {
+    id: 'regularShop',
+    type: 'yesno',
+    label: 'Is this part of your regular weekly shop?',
+  },
+  {
+    id: 'runOut',
+    type: 'choice',
+    label: 'When will you run out without it?',
+    options: ['Today', 'This week', 'Later', 'Not any time soon'],
+  },
+]
 
 const DEFAULT_ITEM = 'it'
 
@@ -387,14 +404,8 @@ function resolveQuestion(question, type) {
 export function getQuestionsForCategory(category, { essential = false, productType = null } = {}) {
   const type = getProductType(category, productType)
   const specific = CATEGORY_QUESTIONS[category] ?? CATEGORY_QUESTIONS.other
-  const questions = [...specific, ...UNIVERSAL_QUESTIONS]
-  const resolve = (q) => resolveQuestion(q, type)
-  if (!essential) return questions.map(resolve)
-  return questions
-    .filter((q) => !ESSENTIAL_SKIPPED_IDS.includes(q.id))
-    // Nobody finances a carton of milk.
-    .map((q) => (q.id === 'price' ? { ...q, label: 'What does {item} cost?', instalments: false } : q))
-    .map(resolve)
+  const questions = essential ? ESSENTIAL_QUESTIONS : [...specific, ...UNIVERSAL_QUESTIONS]
+  return questions.map((q) => resolveQuestion(q, type))
 }
 
 const CATEGORY_LABELS = {

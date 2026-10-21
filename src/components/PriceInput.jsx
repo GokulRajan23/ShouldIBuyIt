@@ -17,7 +17,7 @@ function coverageHint(coverage) {
   return `Covers ${Math.max(1, Math.floor(coverage * 100))}% of the price.`
 }
 
-export default function PriceInput({ onSubmit, disabled, allowInstalments = true }) {
+export default function PriceInput({ onSubmit, disabled }) {
   const [amount, setAmount] = useState('')
   const [payment, setPayment] = useState('full')
   const [budgetBand, setBudgetBand] = useState(DEFAULT_BAND)
@@ -33,8 +33,7 @@ export default function PriceInput({ onSubmit, disabled, allowInstalments = true
     onSubmit({
       amount: amount.trim(),
       currency: CURRENCY,
-      // No payment signal when the choice was never offered (everyday essentials).
-      payment: allowInstalments ? payment : null,
+      payment,
       budgetBand,
       savedAmount: askSavings && savedAmount.trim() ? savedAmount.trim() : null,
     })
@@ -60,31 +59,29 @@ export default function PriceInput({ onSubmit, disabled, allowInstalments = true
         </div>
       </label>
 
-      {allowInstalments && (
-        <fieldset className="flex flex-col gap-2" disabled={disabled}>
-          <legend className="text-sm font-semibold text-purple/80">Payment</legend>
-          <div className="flex gap-3">
-            {[
-              { id: 'full', label: 'Full payment' },
-              { id: 'emi', label: 'Instalments' },
-            ].map(({ id, label }) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setPayment(id)}
-                className={`min-h-12 flex-1 rounded-2xl border-3 border-purple px-4 py-3 text-base font-bold transition-colors ${
-                  payment === id
-                    ? 'bg-purple text-beige shadow-[3px_3px_0_#ff6b6b]'
-                    : 'bg-white text-purple'
-                }`}
-                aria-pressed={payment === id}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </fieldset>
-      )}
+      <fieldset className="flex flex-col gap-2" disabled={disabled}>
+        <legend className="text-sm font-semibold text-purple/80">Payment</legend>
+        <div className="flex gap-3">
+          {[
+            { id: 'full', label: 'Full payment' },
+            { id: 'emi', label: 'Instalments' },
+          ].map(({ id, label }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setPayment(id)}
+              className={`min-h-12 flex-1 rounded-2xl border-3 border-purple px-4 py-3 text-base font-bold transition-colors ${
+                payment === id
+                  ? 'bg-purple text-beige shadow-[3px_3px_0_#ff6b6b]'
+                  : 'bg-white text-purple'
+              }`}
+              aria-pressed={payment === id}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </fieldset>
 
       <fieldset className="flex flex-col gap-2" disabled={disabled}>
         <legend className="text-sm font-semibold text-purple/80">
