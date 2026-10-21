@@ -146,6 +146,7 @@ export default function App() {
             total={state.questions.length}
             product={state.product}
             prankMode={state.prankMode}
+            essential={!state.prankMode && !!state.classification?.isEssential}
             onAnswer={handleAnswer}
           />
         )

@@ -2,8 +2,9 @@
 // Pure and synchronous: no fetch, no async, no DOM.
 
 import { CATEGORIES, PG18_CATEGORIES } from '../data/questionBanks.js'
-import { CATEGORY_KEYWORDS } from '../data/categoryKeywords.js'
+import { CATEGORY_KEYWORDS, ESSENTIAL_KEYWORDS } from '../data/categoryKeywords.js'
 import { getThemeColors } from '../data/themes.js'
+import { PRODUCT_TYPES } from '../data/productTypes.js'
 
 const KID_SAFE_ALTERNATIVES = {
   alcohol: 'grape juice in a fancy glass',
@@ -61,6 +62,31 @@ function scoreCategory(haystack, terms) {
 }
 
 /**
+ * The most specific kind of product within the category (phone, console, wine),
+ * which tailors the question wording. Same scoring as categories; ties go to
+ * the type listed first. Null when nothing matches.
+ */
+function detectProductType(haystack, category) {
+  let best = null
+  for (const type of PRODUCT_TYPES[category] ?? []) {
+    const { score } = scoreCategory(haystack, type.keywords)
+    if (score > 0 && (!best || score > best.score)) best = { id: type.id, score }
+  }
+  return best?.id ?? null
+}
+
+/**
+ * True for everyday staples like milk or bread, which skip the impulse
+ * questions. Needs at least one staple hit and no other food hit, so a treat
+ * that merely contains a staple word ("milk chocolate") is not one.
+ */
+function isEssentialProduct(haystack, category) {
+  if (category !== 'food') return false
+  const foodHits = CATEGORY_KEYWORDS.food.filter((term) => matchesTerm(haystack, term))
+  return foodHits.length > 0 && foodHits.every((term) => ESSENTIAL_KEYWORDS.includes(term))
+}
+
+/**
  * Classify free text into one of CATEGORIES.
  * Returns confidence "high" only when a single category clearly wins.
  */
@@ -92,6 +118,8 @@ export function classifyProduct(rawInput) {
     category,
     confidence,
     isPG18,
+    isEssential: isEssentialProduct(haystack, category),
+    productType: detectProductType(haystack, category),
     kidSafeAlternative: isPG18 ? (KID_SAFE_ALTERNATIVES[category] ?? FALLBACK_KID_SAFE) : null,
     themeColors: getThemeColors(category),
     normalizedProduct: trimmed || 'this purchase',
@@ -107,6 +135,8 @@ export function classificationFromCategory(rawInput, category) {
     category: safeCategory,
     confidence: 'high',
     isPG18,
+    isEssential: isEssentialProduct(buildHaystack(rawInput), safeCategory),
+    productType: detectProductType(buildHaystack(rawInput), safeCategory),
     kidSafeAlternative: isPG18
       ? (KID_SAFE_ALTERNATIVES[safeCategory] ?? FALLBACK_KID_SAFE)
       : null,

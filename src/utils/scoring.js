@@ -29,18 +29,17 @@ export const BUDGET_BANDS = {
 export const BUDGET_BAND_OPTIONS = Object.keys(BUDGET_BANDS)
 
 /**
- * How much of the price is already set aside. Affordability is judged on the
- * shortfall — the part still to find this month — not the sticker price, so
- * someone who saved deliberately isn't scored like an impulse buyer.
+ * Share of the price already set aside, from the euro amount the user typed.
+ * Affordability is judged on the shortfall — the part still to find this
+ * month — not the sticker price, so someone who saved deliberately isn't
+ * scored like an impulse buyer. Saving more than the price is full coverage.
+ * Returns null when nothing usable was entered, which scores as unanswered.
  */
-export const SAVINGS_COVERAGE = {
-  'All of it': 1,
-  'Most of it': 0.7,
-  'Some of it': 0.35,
-  'None of it': 0,
+export function savingsCoverage(savedAmount, price) {
+  const saved = parsePrice(savedAmount)
+  if (saved === null || !Number.isFinite(price) || price <= 0) return null
+  return clamp(saved / price, 0, 1)
 }
-
-export const SAVINGS_OPTIONS = Object.keys(SAVINGS_COVERAGE)
 
 /** Below this share of monthly spare cash, asking about savings is silly. */
 export const SAVINGS_PROMPT_RATIO = 0.2
@@ -653,10 +652,13 @@ export function scoreQuiz({ category = 'other', questions = [], answers = {}, sk
   const isSkipped = (id) => skipped.includes(id) || answers[id] === undefined
 
   // --- Universal price-derived signals -------------------------------------
-  const answeredSavings = priceAnswer?.savedUp in SAVINGS_COVERAGE
-  const coverage = answeredSavings ? SAVINGS_COVERAGE[priceAnswer.savedUp] : 0
+  const savedCoverage = savingsCoverage(priceAnswer?.savedAmount, price)
+  const answeredSavings = savedCoverage !== null
+  const coverage = savedCoverage ?? 0
+  // Kept in euros, not derived from the ratio, so reasons quote clean figures.
+  const savedSoFar = answeredSavings ? Math.min(parsePrice(priceAnswer.savedAmount), price) : 0
   // Only the unsaved portion has to come out of this month's money.
-  const shortfall = price === null ? null : price * (1 - coverage)
+  const shortfall = price === null ? null : price - savedSoFar
 
   if (isSkipped('price') || price === null) {
     // No price means no affordability judgement is possible at all.
@@ -672,9 +674,9 @@ export function scoreQuiz({ category = 'other', questions = [], answers = {}, sk
     if (coverage >= 1) {
       phrase = `you've already saved the full ${money(price)}`
     } else if (coverage > 0 && points < 0) {
-      phrase = `even after your savings, ${money(shortfall)} still has to come from somewhere`
+      phrase = `even after your ${money(savedSoFar)} saved, ${money(shortfall)} still has to come from somewhere`
     } else if (coverage > 0) {
-      phrase = `your savings cover most of the ${money(price)}`
+      phrase = `you've saved ${money(savedSoFar)} of the ${money(price)}`
     } else if (points >= 0) {
       phrase = `${money(price)} barely dents your monthly spare cash`
     } else if (answeredSavings) {
@@ -698,7 +700,9 @@ export function scoreQuiz({ category = 'other', questions = [], answers = {}, sk
         ? `you've already saved the full ${money(price)}`
         : points >= 0
           ? `${money(price)} is modest on any budget`
-          : `${money(shortfall)} would be a stretch on even a generous budget`,
+          : coverage > 0
+            ? `even after your ${money(savedSoFar)} saved, ${money(shortfall)} would be a stretch on a generous budget`
+            : `${money(shortfall)} would be a stretch on even a generous budget`,
     )
   }
 
@@ -721,7 +725,11 @@ export function scoreQuiz({ category = 'other', questions = [], answers = {}, sk
     const ctx = { value: answers[question.id], question, category, price, budget, answers, derived }
     const points = scorer.score(ctx)
     if (points === null || points === undefined) continue
-    add(scorer.label, points, scorer.weight, scorer.phrase(ctx, points >= 0))
+    // A product-specific rewording can change what the answer means, so it
+    // brings its own reason phrases and breakdown label.
+    const positive = points >= 0
+    const phrase = question.phrases ? question.phrases[positive ? 1 : 0] : scorer.phrase(ctx, positive)
+    add(question.signal ?? scorer.label, points, scorer.weight, phrase)
   }
 
   // --- Aggregate ------------------------------------------------------------

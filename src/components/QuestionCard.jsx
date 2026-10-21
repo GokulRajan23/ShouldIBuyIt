@@ -6,10 +6,10 @@ import PriceInput from './PriceInput.jsx'
 import MultipleChoice from './MultipleChoice.jsx'
 
 // Time per question scales with how much there is to do. The price question
-// collects three fields (amount, payment method, budget band), so a flat
-// timer left no chance of finishing it.
+// collects up to four fields (amount, payment method, budget band, amount
+// saved), so a flat timer left no chance of finishing it.
 const TIMER_SECONDS_BY_TYPE = {
-  price: 45,
+  price: 55,
   slider: 20,
   choice: 18,
   yesno: 14,
@@ -20,7 +20,15 @@ function timerSecondsFor(question) {
   return question.timerSeconds ?? TIMER_SECONDS_BY_TYPE[question.type] ?? DEFAULT_TIMER_SECONDS
 }
 
-export default function QuestionCard({ question, index, total, product, prankMode, onAnswer }) {
+export default function QuestionCard({
+  question,
+  index,
+  total,
+  product,
+  prankMode,
+  essential,
+  onAnswer,
+}) {
   const answeredRef = useRef(false)
   const [disabled, setDisabled] = useState(false)
   const [sliderValue, setSliderValue] = useState(question.min ?? 3)
@@ -80,7 +88,13 @@ export default function QuestionCard({ question, index, total, product, prankMod
           />
         )
       case 'price':
-        return <PriceInput disabled={disabled} onSubmit={(v) => submitAnswer(v)} />
+        return (
+          <PriceInput
+            disabled={disabled}
+            allowInstalments={question.instalments !== false}
+            onSubmit={(v) => submitAnswer(v)}
+          />
+        )
       default:
         return null
     }
@@ -106,6 +120,12 @@ export default function QuestionCard({ question, index, total, product, prankMod
             Judging <span className="font-black underline">{product}</span> instead
           </p>
         </div>
+      )}
+
+      {essential && index === 0 && (
+        <p className="mb-4 rounded-2xl border-3 border-purple bg-white/80 px-4 py-2 text-center text-sm font-bold text-purple">
+          🥛 Everyday essential: we skipped the impulse questions.
+        </p>
       )}
 
       <TimerBar

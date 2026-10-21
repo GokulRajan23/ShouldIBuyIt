@@ -2,7 +2,7 @@
 
 > *Should you buy it — or just pass? Let the quiz decide.*
 
-ShouldIBuyIt is a gamified web app for talking yourself out of impulse purchases. Answer seven timed questions and get a decisive **YES ✅** or **NO ❌** — no wishy-washy middle ground.
+ShouldIBuyIt is a gamified web app for talking yourself out of impulse purchases. Answer up to seven timed questions and get a decisive **YES ✅** or **NO ❌** — no wishy-washy middle ground.
 
 It used to ask an AI. Now it does the maths itself, in your browser, with no API key and no network calls.
 
@@ -20,8 +20,8 @@ Most of us overthink purchases or, worse, buy impulsively and regret it. ShouldI
 
 ## ✨ Features
 
-- **Timed question flow** — a countdown bar per question, sized to the work: 14s for a yes/no tap, 45s for the price screen
-- **Category-aware questions** — a laptop and a bottle of wine get different questions; twelve categories, each with its own set
+- **Timed question flow** — a countdown bar per question, sized to the work: 14s for a yes/no tap, 55s for the price screen
+- **Product-specific questions** — twelve categories, and within them the kind of thing you typed: an iPhone is asked how old your current phone is, headphones about sound and noise cancelling, a gym membership whether you kept going last time
 - **Runs entirely offline** — no API key, no backend, no network request, nothing to pay for
 - **Deterministic verdicts** — the same answers always produce the same result, and you can see the arithmetic behind it
 - **Shows its working** — tap "How we got here" to see every signal, its weight, and the final score out of 100
@@ -36,10 +36,10 @@ Most of us overthink purchases or, worse, buy impulsively and regret it. ShouldI
 1. You type what you're thinking of buying.
 2. A keyword classifier sorts it into one of twelve categories. If nothing wins clearly, you're shown a category picker rather than being guessed at.
 3. Anything age-restricted (alcohol, vape, gambling) hits an age gate first.
-4. You answer **seven questions** against a countdown: four specific to the category, plus three everyone gets: price, whether you could wait a month, and whether a sale or hype is driving it.
+4. You answer **seven questions** against a countdown: four specific to the category, plus three everyone gets: price, whether you could wait a month, and whether a sale or hype is driving it. Everyday essentials like milk, bread or eggs get just **three**: how healthy it is, whether there's a cheaper option nearby, and the price. The impulse questions don't apply to a carton of milk.
 5. The scoring engine weighs every answer and returns **YES ✅** or **NO ❌** with a one-line reason built from whichever two signals mattered most.
 
-A tech quiz, for example, asks how often you'll use it, how old your current one is, how much it helps your work, and how thoroughly you compared cheaper options. Then the three universal questions.
+The wording follows what you typed. The classifier also picks the kind of product within the category (phone, console, wine, lottery ticket, about 50 in all), and the questions are rewritten for it. An iPhone gets "How old is the phone you have now?" and "How much is your current phone actually holding you back?"; a PS5 gets "How often will you actually play on this console?". The scoring underneath is identical, so the wording never changes a verdict.
 
 Questions that time out are skipped, and a skipped question drops out of the maths entirely rather than counting as a neutral answer.
 
@@ -88,9 +88,10 @@ verdict is arithmetic rather than a language model.
   never biases the result.
 - Derived metrics: **affordability ratio** (the unsaved shortfall ÷ monthly disposable
   income) and **cost-per-use** (price ÷ projected lifetime uses).
-- For anything substantial the quiz asks how much you've already put aside, and
-  affordability is judged on the shortfall rather than the sticker price, so someone
-  who saved deliberately isn't scored like an impulse buyer.
+- For anything substantial the quiz asks how many euros you've already put aside
+  (one tap fills in the full price), and affordability is judged on the shortfall
+  rather than the sticker price, so someone who saved deliberately isn't scored like an
+  impulse buyer. Saving more than the price counts as fully covered.
 - A **hard affordability veto** stops soft preference signals from carrying a purchase
   whose shortfall exceeds 40% of monthly disposable income. Money already saved for the
   purchase lifts it.
@@ -139,6 +140,7 @@ shouldibuyit/
 │   │   └── Background.jsx         # Per-category gradient mesh
 │   ├── data/
 │   │   ├── questionBanks.js       # Question sets for all 12 categories
+│   │   ├── productTypes.js        # Per-product wording (phone, console, wine…)
 │   │   ├── categoryKeywords.js    # Keyword dictionary for the classifier
 │   │   └── themes.js              # Per-category gradient palettes
 │   ├── hooks/

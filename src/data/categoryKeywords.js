@@ -35,6 +35,8 @@ export const CATEGORY_KEYWORDS = {
     'air fryer', 'blender', 'mixer', 'toaster', 'kettle', 'coffee machine', 'espresso',
     'cookware', 'pan', 'pot', 'knife set', 'plate', 'cutlery', 'glassware', 'heater',
     'air conditioner', 'fan', 'humidifier', 'purifier', 'tool', 'drill', 'furniture',
+    // Appliances named after a staple, so they don't land in food as an essential.
+    'rice cooker', 'bread maker', 'milk frother', 'egg cooker',
   ],
   food: [
     'pizza', 'burger', 'sushi', 'pasta', 'noodle', 'ramen', 'sandwich', 'salad', 'taco',
@@ -45,6 +47,8 @@ export const CATEGORY_KEYWORDS = {
     'chip', 'nut', 'coffee', 'tea', 'juice', 'smoothie', 'soda', 'soft drink', 'water',
     'energy drink', 'protein bar', 'meal', 'takeaway', 'takeout', 'delivery', 'groceries',
     'grocery', 'restaurant', 'dinner', 'lunch', 'breakfast', 'brunch', 'supplement',
+    'flour', 'sugar', 'salt', 'cooking oil', 'loaf', 'potato', 'potatoes', 'onion',
+    'tomato', 'tomatoes', 'banana',
   ],
   fitness: [
     'dumbbell', 'barbell', 'kettlebell', 'weight plate', 'weight bench', 'squat rack',
@@ -117,3 +121,14 @@ export const CATEGORY_KEYWORDS = {
   ],
   other: [],
 }
+
+// Everyday staples. Every term must also appear in the food list above: a
+// product counts as essential only when it classifies as food and none of its
+// food hits is outside this list, so "milk chocolate" or "eggs at brunch"
+// still get the full quiz. Deliberately leaves out water ("water bottle"),
+// coffee and tea (often a café treat) and cheese (often a luxury).
+export const ESSENTIAL_KEYWORDS = [
+  'milk', 'bread', 'loaf', 'egg', 'rice', 'flour', 'sugar', 'salt', 'cooking oil',
+  'butter', 'oat', 'cereal', 'pasta', 'potato', 'potatoes', 'onion', 'tomato',
+  'tomatoes', 'banana', 'fruit', 'vegetable', 'yoghurt', 'yogurt', 'grocery', 'groceries',
+]
