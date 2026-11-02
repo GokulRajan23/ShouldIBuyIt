@@ -27,9 +27,9 @@ export const PRODUCT_TYPES = {
         usage: "How often will you use what's new on this phone?",
         currentAge: 'How old is the phone you have now?',
         productivity: {
-          label: 'How much is your current phone actually holding you back?',
-          phrases: ["your current phone isn't really holding you back", 'your current phone is genuinely holding you back'],
-          signal: 'Current phone holds you back',
+          label: 'How much would this phone improve your day-to-day? (1 = barely, 5 = a lot)',
+          phrases: ["this phone wouldn't change your day much", 'this phone would genuinely improve your day'],
+          signal: 'Day-to-day improvement',
         },
         researched: "How much have you compared it against last year's model or a cheaper phone?",
         canWait: 'Could you keep your current phone another month without it affecting your life?',

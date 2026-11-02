@@ -475,7 +475,7 @@ const phoneNo = scoreQuiz({
   },
 })
 check('Phone override phrase reaches the verdict reason', true,
-  phoneNo.breakdown.some((b) => b.label === 'Current phone holds you back'), phoneNo.reason)
+  phoneNo.breakdown.some((b) => b.label === 'Day-to-day improvement'), phoneNo.reason)
 check('Wording does not change scores', run('tech', {
   price: price('1200', 'full', '€700+', '1200'), canWait: true, fomo: true,
   usage: 'Rarely', currentAge: 'New', productivity: 1, researched: 'Not at all',

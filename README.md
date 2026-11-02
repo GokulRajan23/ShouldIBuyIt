@@ -39,7 +39,7 @@ Most of us overthink purchases or, worse, buy impulsively and regret it. ShouldI
 4. You answer **seven questions** against a countdown: four specific to the category, plus three everyone gets: price, whether you could wait a month, and whether a sale or hype is driving it. Everyday essentials like milk, bread or eggs skip all of that and get just **three** questions about need: whether you already have some at home, whether it's part of your regular weekly shop, and when you'll run out. There's no price screen for essentials; the verdict comes from those answers alone.
 5. The scoring engine weighs every answer and returns **YES ✅** or **NO ❌** with a one-line reason built from whichever two signals mattered most.
 
-The wording follows what you typed. The classifier also picks the kind of product within the category (phone, console, wine, lottery ticket, about 50 in all), and the questions are rewritten for it. An iPhone gets "How old is the phone you have now?" and "How much is your current phone actually holding you back?"; a PS5 gets "How often will you actually play on this console?". The scoring underneath is identical, so the wording never changes a verdict.
+The wording follows what you typed. The classifier also picks the kind of product within the category (phone, console, wine, lottery ticket, about 50 in all), and the questions are rewritten for it. An iPhone gets "How old is the phone you have now?" and "How much would this phone improve your day-to-day?"; a PS5 gets "How often will you actually play on this console?". The scoring underneath is identical, so the wording never changes a verdict.
 
 Questions that time out are skipped, and a skipped question drops out of the maths entirely rather than counting as a neutral answer.
 
