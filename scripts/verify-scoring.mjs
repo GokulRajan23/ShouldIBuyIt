@@ -1,6 +1,6 @@
 // Fixture checks for the offline scoring engine. Plain node, no test framework.
 //   node scripts/verify-scoring.mjs
-import { scoreQuiz, parsePrice, savingsCoverage, shouldAskAboutSavings } from '../src/utils/scoring.js'
+import { scoreQuiz, parsePrice, savingsCoverage } from '../src/utils/scoring.js'
 import { classifyProduct } from '../src/utils/classifier.js'
 import { CATEGORIES, getQuestionsForCategory } from '../src/data/questionBanks.js'
 import { PRODUCT_TYPES } from '../src/data/productTypes.js'
@@ -292,13 +292,17 @@ check('Savings still count when budget withheld', 'YES', savedWithheld.verdict, 
 check('Best-case assumption cannot outscore the truth', true, savedWithheld.score <= savedHonest.score,
   `withheld ${savedWithheld.score} <= honest ${savedHonest.score}`)
 
-console.log('\n— Savings prompt threshold —\n')
-check('€12 lunch is never asked', false, shouldAskAboutSavings(12, 'Under €100'))
-check('€40 on a big budget is not asked', false, shouldAskAboutSavings(40, '€700+'))
-check('€1200 laptop is asked', true, shouldAskAboutSavings(1200, '€700+'))
-check('€80 on a small budget is asked', true, shouldAskAboutSavings(80, '€100–300'))
-check('band withheld: €100 not asked', false, shouldAskAboutSavings(100, 'Rather not say'))
-check('band withheld: €200 asked', true, shouldAskAboutSavings(200, 'Rather not say'))
+console.log('\n— Savings on small purchases —\n')
+// The savings field is shown for every priced purchase, so small buys must
+// score sensibly whether it's filled in or not.
+const smallBlank = run('tech', bigBuy({ price: price('40', 'full', '€300–700') }))
+const smallZero = run('tech', bigBuy({ price: price('40', 'full', '€300–700', '0') }))
+const smallFull = run('tech', bigBuy({ price: price('40', 'full', '€300–700', '40') }))
+check('Small buy: "0 saved" scores the same as leaving it blank', smallBlank.score, smallZero.score,
+  `blank ${smallBlank.score}, zero ${smallZero.score}`)
+check('Small buy: saving it all never lowers the score', true, smallFull.score >= smallZero.score,
+  `full ${smallFull.score} >= zero ${smallZero.score}`)
+check('Small buy, nothing saved → YES still possible', 'YES', smallZero.verdict, smallZero.reason)
 
 console.log('\n— Price parsing —\n')
 check('parsePrice("149")', 149, parsePrice('149'))

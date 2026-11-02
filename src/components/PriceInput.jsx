@@ -1,10 +1,5 @@
 import { useState } from 'react'
-import {
-  BUDGET_BAND_OPTIONS,
-  parsePrice,
-  savingsCoverage,
-  shouldAskAboutSavings,
-} from '../utils/scoring.js'
+import { BUDGET_BAND_OPTIONS, parsePrice, savingsCoverage } from '../utils/scoring.js'
 
 const CURRENCY = '€'
 const DEFAULT_BAND = BUDGET_BAND_OPTIONS[1]
@@ -24,8 +19,6 @@ export default function PriceInput({ onSubmit, disabled }) {
   const [savedAmount, setSavedAmount] = useState('')
 
   const price = parsePrice(amount)
-  // Only worth asking about savings once the amount is substantial.
-  const askSavings = shouldAskAboutSavings(price, budgetBand)
   const hint = coverageHint(savingsCoverage(savedAmount, price))
 
   const handleSubmit = () => {
@@ -35,7 +28,7 @@ export default function PriceInput({ onSubmit, disabled }) {
       currency: CURRENCY,
       payment,
       budgetBand,
-      savedAmount: askSavings && savedAmount.trim() ? savedAmount.trim() : null,
+      savedAmount: savedAmount.trim() ? savedAmount.trim() : null,
     })
   }
 
@@ -106,37 +99,35 @@ export default function PriceInput({ onSubmit, disabled }) {
         </div>
       </fieldset>
 
-      {askSavings && (
-        <fieldset className="flex flex-col gap-2" disabled={disabled}>
-          <legend className="text-sm font-semibold text-purple/80">
-            How much have you already saved for it?
-          </legend>
-          <div className="flex items-center gap-2">
-            <span className="text-2xl font-bold text-purple">{CURRENCY}</span>
-            <input
-              type="text"
-              inputMode="decimal"
-              value={savedAmount}
-              disabled={disabled}
-              onChange={(e) => setSavedAmount(e.target.value)}
-              placeholder="0"
-              className="min-h-14 min-w-0 flex-1 rounded-2xl border-3 border-purple bg-white px-4 text-xl font-semibold text-purple outline-none focus:ring-4 focus:ring-coral/40"
-              aria-label="Amount already saved in euros"
-              aria-describedby="savings-hint"
-            />
-          </div>
-          <button
-            type="button"
-            onClick={() => setSavedAmount(amount.trim())}
-            className="min-h-12 rounded-2xl border-3 border-purple bg-white px-4 py-3 text-sm font-bold text-purple transition-colors"
-          >
-            I&apos;ve saved all of it
-          </button>
-          <p id="savings-hint" aria-live="polite" className="min-h-5 text-sm font-semibold text-purple/70">
-            {hint}
-          </p>
-        </fieldset>
-      )}
+      <fieldset className="flex flex-col gap-2" disabled={disabled}>
+        <legend className="text-sm font-semibold text-purple/80">
+          How much have you already saved for it?
+        </legend>
+        <div className="flex items-center gap-2">
+          <span className="text-2xl font-bold text-purple">{CURRENCY}</span>
+          <input
+            type="text"
+            inputMode="decimal"
+            value={savedAmount}
+            disabled={disabled}
+            onChange={(e) => setSavedAmount(e.target.value)}
+            placeholder="0"
+            className="min-h-14 min-w-0 flex-1 rounded-2xl border-3 border-purple bg-white px-4 text-xl font-semibold text-purple outline-none focus:ring-4 focus:ring-coral/40"
+            aria-label="Amount already saved in euros"
+            aria-describedby="savings-hint"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() => setSavedAmount(amount.trim())}
+          className="min-h-12 rounded-2xl border-3 border-purple bg-white px-4 py-3 text-sm font-bold text-purple transition-colors"
+        >
+          I&apos;ve saved all of it
+        </button>
+        <p id="savings-hint" aria-live="polite" className="min-h-5 text-sm font-semibold text-purple/70">
+          {hint}
+        </p>
+      </fieldset>
 
       <button
         type="button"

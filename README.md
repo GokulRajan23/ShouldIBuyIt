@@ -88,7 +88,7 @@ verdict is arithmetic rather than a language model.
   never biases the result.
 - Derived metrics: **affordability ratio** (the unsaved shortfall ÷ monthly disposable
   income) and **cost-per-use** (price ÷ projected lifetime uses).
-- For anything substantial the quiz asks how many euros you've already put aside
+- For every priced purchase the quiz asks how many euros you've already put aside
   (one tap fills in the full price), and affordability is judged on the shortfall
   rather than the sticker price, so someone who saved deliberately isn't scored like an
   impulse buyer. Saving more than the price counts as fully covered.

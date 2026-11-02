@@ -41,20 +41,6 @@ export function savingsCoverage(savedAmount, price) {
   return clamp(saved / price, 0, 1)
 }
 
-/** Below this share of monthly spare cash, asking about savings is silly. */
-export const SAVINGS_PROMPT_RATIO = 0.2
-/** Nobody saves up for a sandwich, whatever their income. */
-export const SAVINGS_PROMPT_MIN = 80
-/** Used instead of the ratio when the budget band is withheld. */
-export const SAVINGS_PROMPT_ABSOLUTE = 150
-
-/** True when a purchase is big enough that "have you saved for it?" is worth asking. */
-export function shouldAskAboutSavings(price, budgetBand) {
-  if (!Number.isFinite(price) || price < SAVINGS_PROMPT_MIN) return false
-  const budget = BUDGET_BANDS[budgetBand] ?? null
-  return budget === null ? price >= SAVINGS_PROMPT_ABSOLUTE : price / budget >= SAVINGS_PROMPT_RATIO
-}
-
 /** Choice label → how many times per month it gets used. */
 const USES_PER_MONTH = {
   Daily: 30,
