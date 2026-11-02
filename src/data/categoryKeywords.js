@@ -49,6 +49,9 @@ export const CATEGORY_KEYWORDS = {
     'grocery', 'restaurant', 'dinner', 'lunch', 'breakfast', 'brunch', 'supplement',
     'flour', 'sugar', 'salt', 'cooking oil', 'loaf', 'potato', 'potatoes', 'onion',
     'tomato', 'tomatoes', 'banana',
+    // Prepared chicken dishes, so they don't count as the raw staple.
+    'fried chicken', 'popcorn chicken', 'grilled chicken', 'butter chicken', 'chicken wing',
+    'nugget', 'tikka', 'shawarma', 'rotisserie', 'kfc',
   ],
   fitness: [
     'dumbbell', 'barbell', 'kettlebell', 'weight plate', 'weight bench', 'squat rack',
@@ -131,4 +134,5 @@ export const ESSENTIAL_KEYWORDS = [
   'milk', 'bread', 'loaf', 'egg', 'rice', 'flour', 'sugar', 'salt', 'cooking oil',
   'butter', 'oat', 'cereal', 'pasta', 'potato', 'potatoes', 'onion', 'tomato',
   'tomatoes', 'banana', 'fruit', 'vegetable', 'yoghurt', 'yogurt', 'grocery', 'groceries',
+  'chicken',
 ]

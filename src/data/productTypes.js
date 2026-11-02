@@ -269,7 +269,8 @@ export const PRODUCT_TYPES = {
       id: 'takeaway',
       keywords: [
         'pizza', 'burger', 'sushi', 'kebab', 'taco', 'burrito', 'fries', 'ramen', 'curry',
-        'takeaway', 'takeout', 'delivery',
+        'takeaway', 'takeout', 'delivery', 'fried chicken', 'popcorn chicken', 'grilled chicken',
+        'butter chicken', 'chicken wing', 'nugget', 'tikka', 'shawarma', 'rotisserie', 'kfc',
       ],
       item: 'this takeaway',
       questions: {
@@ -331,6 +332,7 @@ export const PRODUCT_TYPES = {
         'milk', 'bread', 'loaf', 'egg', 'rice', 'flour', 'sugar', 'salt', 'cooking oil',
         'butter', 'oat', 'cereal', 'pasta', 'potato', 'potatoes', 'onion', 'tomato',
         'tomatoes', 'banana', 'fruit', 'vegetable', 'yoghurt', 'yogurt', 'grocery', 'groceries',
+        'chicken',
       ],
       item: 'it',
       questions: {

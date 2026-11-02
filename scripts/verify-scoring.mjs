@@ -324,10 +324,13 @@ check('laptop is not PG18', false, classifyProduct('laptop').isPG18)
 
 console.log('\n— Everyday essentials —\n')
 
-for (const product of ['milk', '2 litres of milk', 'oat milk', 'eggs', 'bread', 'rice', 'groceries']) {
+for (const product of ['milk', '2 litres of milk', 'oat milk', 'eggs', 'bread', 'rice', 'groceries',
+  'chicken', 'chicken breast', 'whole chicken', '1kg chicken thighs']) {
   check(`"${product}" is an essential`, true, classifyProduct(product).isEssential)
 }
-for (const product of ['milk chocolate', 'pizza', 'eggs benedict at brunch', 'coffee', 'laptop', 'wine']) {
+for (const product of ['milk chocolate', 'pizza', 'eggs benedict at brunch', 'coffee', 'laptop', 'wine',
+  'fried chicken', 'chicken nuggets', 'chicken wings', 'butter chicken', 'chicken burger',
+  'chicken curry', 'chicken tikka', 'chicken shawarma', 'rotisserie chicken', 'KFC bucket']) {
   check(`"${product}" is not an essential`, false, classifyProduct(product).isEssential)
 }
 check('"rice cooker" → home, not food', 'home', classifyProduct('rice cooker').category)
